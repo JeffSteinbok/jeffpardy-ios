@@ -36,4 +36,16 @@ final class AppConfigurationTests: XCTestCase {
 
         XCTAssertNil(AppConfiguration.gameCode(fromPlayerURL: url))
     }
+
+    func testPlayerURL_CreatesShareableUppercaseLink() {
+        XCTAssertEqual(
+            AppConfiguration.playerURL(gameCode: "abc123")?.absoluteString,
+            "https://jeffpardy.azurewebsites.net/player#ABC123"
+        )
+    }
+
+    func testPlayerURL_RejectsInvalidCode() {
+        XCTAssertNil(AppConfiguration.playerURL(gameCode: "ABC"))
+        XCTAssertNil(AppConfiguration.playerURL(gameCode: "ABC!23"))
+    }
 }

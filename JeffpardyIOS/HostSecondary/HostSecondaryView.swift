@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HostSecondaryView: View {
     @State private var displayURL: URL?
+    @State private var gameCode = ""
     @State private var errorMessage: String?
     @StateObject private var nearbyAdvertiser = NearbyGameAdvertiser()
 
@@ -35,10 +36,23 @@ struct HostSecondaryView: View {
             }
             .toolbar {
                 if displayURL != nil {
+                    if let playerURL = AppConfiguration.playerURL(gameCode: gameCode) {
+                        ToolbarItem(placement: .topBarLeading) {
+                            ShareLink(
+                                item: playerURL,
+                                subject: Text("Join my Jeffpardy game"),
+                                message: Text("Join my Jeffpardy game \(gameCode).")
+                            ) {
+                                Label("Invite", systemImage: "square.and.arrow.up")
+                            }
+                        }
+                    }
+
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("Scan Another") {
                             nearbyAdvertiser.stop()
                             displayURL = nil
+                            gameCode = ""
                         }
                     }
                 }
@@ -120,7 +134,7 @@ struct HostSecondaryView: View {
             return
         }
 
-        let gameCode = String(fragment.prefix(6)).uppercased()
+        gameCode = String(fragment.prefix(6)).uppercased()
         displayURL = url
         nearbyAdvertiser.start(gameCode: gameCode)
     }

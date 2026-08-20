@@ -2,6 +2,7 @@ import SwiftUI
 import UIKit
 
 struct PlayerView: View {
+    @Binding var pendingGameCode: String?
     @StateObject private var viewModel = PlayerViewModel()
     @StateObject private var nearbyBrowser = NearbyGameBrowser()
     @Environment(\.scenePhase) private var scenePhase
@@ -37,6 +38,18 @@ struct PlayerView: View {
             }
             .toolbar {
                 if viewModel.isJoined {
+                    if let playerURL = AppConfiguration.playerURL(gameCode: viewModel.gameCode) {
+                        ToolbarItem(placement: .topBarLeading) {
+                            ShareLink(
+                                item: playerURL,
+                                subject: Text("Join my Jeffpardy game"),
+                                message: Text("Join my Jeffpardy game \(viewModel.gameCode).")
+                            ) {
+                                Label("Invite", systemImage: "square.and.arrow.up")
+                            }
+                        }
+                    }
+
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("Leave") {
                             Task {
@@ -49,12 +62,16 @@ struct PlayerView: View {
         }
         .onAppear {
             nearbyBrowser.start()
+            consumePendingGameCode()
         }
         .onDisappear {
             nearbyBrowser.stop()
         }
         .fullScreenCover(isPresented: $isShowingScanner) {
             playerQRScanner
+        }
+        .onChange(of: pendingGameCode) {
+            consumePendingGameCode()
         }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active, viewModel.isJoined else {
@@ -165,6 +182,23 @@ struct PlayerView: View {
 
                 Divider()
                     .overlay(.white.opacity(0.15))
+
+                if let playerURL = AppConfiguration.playerURL(gameCode: viewModel.gameCode) {
+                    ShareLink(
+                        item: playerURL,
+                        subject: Text("Join my Jeffpardy game"),
+                        message: Text("Join my Jeffpardy game \(viewModel.gameCode).")
+                    ) {
+                        Label("Invite Friends", systemImage: "square.and.arrow.up")
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(JeffpardyTheme.gold)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical, 6)
+                    }
+
+                    Divider()
+                        .overlay(.white.opacity(0.15))
+                }
 
                 TextField(
                     "",
@@ -284,6 +318,15 @@ struct PlayerView: View {
     private func selectGame(_ gameCode: String) {
         viewModel.gameCode = gameCode.uppercased()
         hasSelectedGame = true
+    }
+
+    private func consumePendingGameCode() {
+        guard let pendingGameCode else {
+            return
+        }
+
+        selectGame(pendingGameCode)
+        self.pendingGameCode = nil
     }
 
     private var buzzerView: some View {
@@ -416,5 +459,5 @@ struct PlayerView: View {
 }
 
 #Preview {
-    PlayerView()
+    PlayerView(pendingGameCode: .constant(nil))
 }

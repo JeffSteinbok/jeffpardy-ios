@@ -45,4 +45,20 @@ enum AppConfiguration {
 
         return fragment.uppercased()
     }
+
+    static func playerURL(gameCode: String) -> URL? {
+        let normalizedCode = gameCode.uppercased()
+        guard
+            normalizedCode.count == 6,
+            normalizedCode.allSatisfy({ $0.isLetter || $0.isNumber }),
+            let url = URL(
+                string: "player#\(normalizedCode)",
+                relativeTo: baseURL
+            )
+        else {
+            return nil
+        }
+
+        return url.absoluteURL
+    }
 }
