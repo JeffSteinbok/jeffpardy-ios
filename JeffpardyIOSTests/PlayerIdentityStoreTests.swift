@@ -2,16 +2,17 @@ import XCTest
 @testable import JeffpardyIOS
 
 final class PlayerIdentityStoreTests: XCTestCase {
+    private let suiteName = "com.jeffsteinbok.jeffpardy.tests.PlayerIdentityStore"
     private var defaults: UserDefaults!
 
     override func setUp() {
         super.setUp()
-        defaults = UserDefaults(suiteName: #file)
-        defaults.removePersistentDomain(forName: #file)
+        defaults = UserDefaults(suiteName: suiteName)
+        defaults.removePersistentDomain(forName: suiteName)
     }
 
     override func tearDown() {
-        defaults.removePersistentDomain(forName: #file)
+        defaults.removePersistentDomain(forName: suiteName)
         defaults = nil
         super.tearDown()
     }
@@ -34,4 +35,3 @@ final class PlayerIdentityStoreTests: XCTestCase {
         )
     }
 }
-
