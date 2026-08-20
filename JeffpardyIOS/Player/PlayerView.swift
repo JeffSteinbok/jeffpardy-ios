@@ -174,11 +174,19 @@ struct PlayerView: View {
                     Spacer()
 
                     Button("Change") {
-                        hasSelectedGame = false
+                        Task {
+                            await viewModel.disconnect()
+                            hasSelectedGame = false
+                        }
                     }
                     .font(.subheadline.weight(.bold))
                     .foregroundStyle(JeffpardyTheme.gold)
                 }
+
+                Divider()
+                    .overlay(.white.opacity(0.15))
+
+                lobbyRoster
 
                 Divider()
                     .overlay(.white.opacity(0.15))
@@ -316,8 +324,12 @@ struct PlayerView: View {
     }
 
     private func selectGame(_ gameCode: String) {
-        viewModel.gameCode = gameCode.uppercased()
+        let normalizedCode = gameCode.uppercased()
+        viewModel.gameCode = normalizedCode
         hasSelectedGame = true
+        Task {
+            await viewModel.connectToLobby(gameCode: normalizedCode)
+        }
     }
 
     private func consumePendingGameCode() {
@@ -327,6 +339,51 @@ struct PlayerView: View {
 
         selectGame(pendingGameCode)
         self.pendingGameCode = nil
+    }
+
+    private var lobbyRoster: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("CURRENT PLAYERS")
+                    .font(.caption.weight(.black))
+                    .tracking(0.8)
+                    .foregroundStyle(.white.opacity(0.65))
+
+                Spacer()
+
+                Label(
+                    viewModel.connectionState.label,
+                    systemImage: connectionIcon
+                )
+                .font(.caption.weight(.bold))
+                .foregroundStyle(
+                    viewModel.connectionState == .connected
+                        ? Color.green
+                        : Color.white.opacity(0.6)
+                )
+            }
+
+            if viewModel.sortedTeams.isEmpty {
+                Text(
+                    viewModel.connectionState == .connected
+                        ? "No players have joined yet."
+                        : "Loading players..."
+                )
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.6))
+            } else {
+                ForEach(viewModel.sortedTeams, id: \.name) { team in
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(team.name)
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(JeffpardyTheme.gold)
+                        Text(team.players.map(\.name).joined(separator: ", "))
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.78))
+                    }
+                }
+            }
+        }
     }
 
     private var buzzerView: some View {

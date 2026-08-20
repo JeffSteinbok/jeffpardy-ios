@@ -10,10 +10,12 @@
 		00BDB6C36B01D69CD6738446 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 459D8680A769820B58ABB8D9 /* Assets.xcassets */; };
 		00D9B702B4AFD7CE2F4AD7E9 /* AppConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8805D07C3FA25F5A12F0FF4E /* AppConfiguration.swift */; };
 		04A996AFD3E68B1F5EC43766 /* PlayerModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCC2105CACD03E21A27FB47F /* PlayerModels.swift */; };
+		1B1020974B60FA00736DD4E5 /* SignalRModelDecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23CCDEAC431055F9CAC4CA84 /* SignalRModelDecodingTests.swift */; };
 		1D30445CFABF9C4E49A988DC /* SignalRClient in Frameworks */ = {isa = PBXBuildFile; productRef = 0B451B83FBE7ECAFF0204BC3 /* SignalRClient */; };
 		20EB1A856D148A6F041F5152 /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B791AD987DA38F68D49FDF9B /* PlayerView.swift */; };
 		3317422577CEDB8A3E70C4BD /* HostSecondaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46F6F295832951F8EAD6465F /* HostSecondaryView.swift */; };
 		3CFA87B3BF2988A1F7D566F1 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83398C2EC38FDB8B3F773AB7 /* RootView.swift */; };
+		41E8058003B5484A8DBCDA6C /* HostSecondaryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F67D382490E288C41E74073F /* HostSecondaryViewModel.swift */; };
 		4713425C766EBB84D0A0019E /* NearbyGameBrowser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A97EE8DD462CF04DB3A3C48 /* NearbyGameBrowser.swift */; };
 		565BD5990B6D6B0D44196101 /* CodeField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 678B66DEFD03FEDBEA2C544A /* CodeField.swift */; };
 		5865C03C56F1B461D56A825C /* NearbyGameAdvertiser.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1606E9F9FFD5C0AA7ED40A /* NearbyGameAdvertiser.swift */; };
@@ -22,8 +24,8 @@
 		6F0B04329D2CECB478F7C21D /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABE1256A3A19334A1F535720 /* QRScannerView.swift */; };
 		75EB6585CF6653398C87CD6E /* PlayerIdentityStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCD0E1E7DA58D0634834BAC3 /* PlayerIdentityStoreTests.swift */; };
 		849D2305169B553B5E7BFDD8 /* AppConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB3F84E53DCAE2732AF9C4D0 /* AppConfigurationTests.swift */; };
-		896FE6DE070350F6ABF304C5 /* WebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C29FB7AD732E07A0A999D1E /* WebView.swift */; };
 		9EE8969938C3940706613366 /* JeffpardyTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC5E76F59E9DD6EF763FA327 /* JeffpardyTheme.swift */; };
+		A021AF3A69EDB9131EE95B81 /* HostSecondaryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BA0ABBB52B66608A8470FCC /* HostSecondaryModels.swift */; };
 		BC8D1B0CC5C5C3200C5E428A /* PlayerIdentityStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB1096AF357EF4D8FE7B8864 /* PlayerIdentityStore.swift */; };
 		E006115633AEEA1841B1A6F8 /* AnimatedLaunchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87658731031EE8D2B7DB1F12 /* AnimatedLaunchView.swift */; };
 		FE3231D82155A61C87B3E563 /* NearbyGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5DA866FA886F77B8AD651F6 /* NearbyGame.swift */; };
@@ -40,7 +42,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		3C29FB7AD732E07A0A999D1E /* WebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebView.swift; sourceTree = "<group>"; };
+		23CCDEAC431055F9CAC4CA84 /* SignalRModelDecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalRModelDecodingTests.swift; sourceTree = "<group>"; };
 		459D8680A769820B58ABB8D9 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		46F6F295832951F8EAD6465F /* HostSecondaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostSecondaryView.swift; sourceTree = "<group>"; };
 		4A97EE8DD462CF04DB3A3C48 /* NearbyGameBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NearbyGameBrowser.swift; sourceTree = "<group>"; };
@@ -50,6 +52,7 @@
 		83398C2EC38FDB8B3F773AB7 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		87658731031EE8D2B7DB1F12 /* AnimatedLaunchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedLaunchView.swift; sourceTree = "<group>"; };
 		8805D07C3FA25F5A12F0FF4E /* AppConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfiguration.swift; sourceTree = "<group>"; };
+		8BA0ABBB52B66608A8470FCC /* HostSecondaryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostSecondaryModels.swift; sourceTree = "<group>"; };
 		9C3A759B5223832B95A7D721 /* PlayerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerViewModel.swift; sourceTree = "<group>"; };
 		A16BC6CCDA4747A8B471919C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		A5DA866FA886F77B8AD651F6 /* NearbyGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NearbyGame.swift; sourceTree = "<group>"; };
@@ -63,6 +66,7 @@
 		EB3F84E53DCAE2732AF9C4D0 /* AppConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfigurationTests.swift; sourceTree = "<group>"; };
 		EF4DFF7DFD5062B6869386E3 /* JeffpardyIOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = JeffpardyIOS.entitlements; sourceTree = "<group>"; };
 		F0618576B71A58B0A6CF4EC1 /* JeffpardyIOSTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = JeffpardyIOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		F67D382490E288C41E74073F /* HostSecondaryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostSecondaryViewModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -118,9 +122,10 @@
 		7FBEA16ADB1AE91E32976C5F /* HostSecondary */ = {
 			isa = PBXGroup;
 			children = (
+				8BA0ABBB52B66608A8470FCC /* HostSecondaryModels.swift */,
 				46F6F295832951F8EAD6465F /* HostSecondaryView.swift */,
+				F67D382490E288C41E74073F /* HostSecondaryViewModel.swift */,
 				ABE1256A3A19334A1F535720 /* QRScannerView.swift */,
-				3C29FB7AD732E07A0A999D1E /* WebView.swift */,
 			);
 			path = HostSecondary;
 			sourceTree = "<group>";
@@ -163,6 +168,7 @@
 			children = (
 				EB3F84E53DCAE2732AF9C4D0 /* AppConfigurationTests.swift */,
 				CCD0E1E7DA58D0634834BAC3 /* PlayerIdentityStoreTests.swift */,
+				23CCDEAC431055F9CAC4CA84 /* SignalRModelDecodingTests.swift */,
 			);
 			path = JeffpardyIOSTests;
 			sourceTree = "<group>";
@@ -288,7 +294,9 @@
 				E006115633AEEA1841B1A6F8 /* AnimatedLaunchView.swift in Sources */,
 				00D9B702B4AFD7CE2F4AD7E9 /* AppConfiguration.swift in Sources */,
 				565BD5990B6D6B0D44196101 /* CodeField.swift in Sources */,
+				A021AF3A69EDB9131EE95B81 /* HostSecondaryModels.swift in Sources */,
 				3317422577CEDB8A3E70C4BD /* HostSecondaryView.swift in Sources */,
+				41E8058003B5484A8DBCDA6C /* HostSecondaryViewModel.swift in Sources */,
 				69961A6C307436007C1EAFD0 /* JeffpardyApp.swift in Sources */,
 				9EE8969938C3940706613366 /* JeffpardyTheme.swift in Sources */,
 				FE3231D82155A61C87B3E563 /* NearbyGame.swift in Sources */,
@@ -300,7 +308,6 @@
 				69E1CA87C5C99624F9AFEDE6 /* PlayerViewModel.swift in Sources */,
 				6F0B04329D2CECB478F7C21D /* QRScannerView.swift in Sources */,
 				3CFA87B3BF2988A1F7D566F1 /* RootView.swift in Sources */,
-				896FE6DE070350F6ABF304C5 /* WebView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -310,6 +317,7 @@
 			files = (
 				849D2305169B553B5E7BFDD8 /* AppConfigurationTests.swift in Sources */,
 				75EB6585CF6653398C87CD6E /* PlayerIdentityStoreTests.swift in Sources */,
+				1B1020974B60FA00736DD4E5 /* SignalRModelDecodingTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -486,7 +494,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = JeffpardyIOS/Resources/JeffpardyIOS.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				INFOPLIST_FILE = JeffpardyIOS/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -507,7 +515,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = JeffpardyIOS/Resources/JeffpardyIOS.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				INFOPLIST_FILE = JeffpardyIOS/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

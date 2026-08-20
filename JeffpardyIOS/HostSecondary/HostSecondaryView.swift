@@ -1,19 +1,19 @@
 import SwiftUI
+import UIKit
 
 struct HostSecondaryView: View {
-    @State private var displayURL: URL?
     @State private var gameCode = ""
-    @State private var errorMessage: String?
+    @State private var localErrorMessage: String?
     @StateObject private var nearbyAdvertiser = NearbyGameAdvertiser()
+    @StateObject private var viewModel = HostSecondaryViewModel()
 
     var body: some View {
         NavigationStack {
             Group {
-                if let displayURL {
-                    WebView(url: displayURL)
-                        .ignoresSafeArea(edges: .bottom)
-                } else {
+                if gameCode.isEmpty {
                     scannerView
+                } else {
+                    nativeDisplay
                 }
             }
             .navigationTitle("HOST DISPLAY")
@@ -22,20 +22,28 @@ struct HostSecondaryView: View {
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .alert(
-                "Invalid QR Code",
+                "Jeffpardy",
                 isPresented: Binding(
-                    get: { errorMessage != nil },
-                    set: { if !$0 { errorMessage = nil } }
+                    get: {
+                        localErrorMessage != nil || viewModel.errorMessage != nil
+                    },
+                    set: {
+                        if !$0 {
+                            localErrorMessage = nil
+                            viewModel.errorMessage = nil
+                        }
+                    }
                 )
             ) {
                 Button("OK", role: .cancel) {
-                    errorMessage = nil
+                    localErrorMessage = nil
+                    viewModel.errorMessage = nil
                 }
             } message: {
-                Text(errorMessage ?? "")
+                Text(localErrorMessage ?? viewModel.errorMessage ?? "")
             }
             .toolbar {
-                if displayURL != nil {
+                if !gameCode.isEmpty {
                     if let playerURL = AppConfiguration.playerURL(gameCode: gameCode) {
                         ToolbarItem(placement: .topBarLeading) {
                             ShareLink(
@@ -50,9 +58,7 @@ struct HostSecondaryView: View {
 
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("Scan Another") {
-                            nearbyAdvertiser.stop()
-                            displayURL = nil
-                            gameCode = ""
+                            resetDisplay()
                         }
                     }
                 }
@@ -92,7 +98,7 @@ struct HostSecondaryView: View {
                             }
                         }
                     }
-                        .padding(24)
+                    .padding(24)
                 }
             }
         } else {
@@ -107,8 +113,7 @@ struct HostSecondaryView: View {
                             .foregroundStyle(JeffpardyTheme.gold)
                         Text("CAMERA SCANNING UNAVAILABLE")
                             .font(.headline.weight(.black))
-                            .multilineTextAlignment(.center)
-                        Text("Open Jeffpardy on a device with a camera to scan the host QR code.")
+                        Text("Use a device with a camera to scan the private host QR code.")
                             .foregroundStyle(.white.opacity(0.7))
                             .multilineTextAlignment(.center)
                     }
@@ -117,6 +122,184 @@ struct HostSecondaryView: View {
             .padding(24)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .jeffpardyBackground()
+        }
+    }
+
+    private var nativeDisplay: some View {
+        VStack(spacing: 20) {
+            HStack {
+                Label(
+                    viewModel.connectionState.label,
+                    systemImage: connectionIcon
+                )
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(
+                    viewModel.isConnected
+                        ? Color.green
+                        : Color.white.opacity(0.65)
+                )
+
+                Spacer()
+
+                Text(gameCode)
+                    .font(.headline.monospaced().weight(.black))
+                    .foregroundStyle(JeffpardyTheme.gold)
+            }
+
+            displayContent
+
+            if !viewModel.topBuzzers.isEmpty {
+                buzzerResults
+            }
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .jeffpardyBackground()
+    }
+
+    @ViewBuilder
+    private var displayContent: some View {
+        switch viewModel.displayState {
+        case .waiting:
+            VStack(spacing: 24) {
+                Spacer()
+                JeffpardyLogo()
+                    .frame(maxWidth: 500)
+                Text(
+                    viewModel.isConnected
+                        ? "Waiting for the host to start the round"
+                        : "Connecting to the game"
+                )
+                .font(.title2.weight(.bold))
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.white.opacity(0.75))
+                rosterSummary
+                Spacer()
+            }
+
+        case let .round(round):
+            ScrollView {
+                VStack(spacing: 20) {
+                    Text("\(round.name.uppercased()) ROUND")
+                        .font(.system(size: 34, weight: .black))
+                        .fontWidth(.condensed)
+                        .tracking(1.4)
+                        .shadow(color: .black, radius: 2, x: 2, y: 2)
+
+                    LazyVGrid(
+                        columns: [GridItem(.adaptive(minimum: 220), spacing: 14)],
+                        spacing: 14
+                    ) {
+                        ForEach(round.categories, id: \.title) { category in
+                            JeffpardyCard {
+                                VStack(spacing: 8) {
+                                    Text(category.title.uppercased())
+                                        .font(.title3.weight(.black))
+                                        .multilineTextAlignment(.center)
+                                    if let comment = category.comment, !comment.isEmpty {
+                                        Text(comment)
+                                            .font(.subheadline)
+                                            .foregroundStyle(.white.opacity(0.65))
+                                            .multilineTextAlignment(.center)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity, minHeight: 90)
+                            }
+                        }
+                    }
+                }
+            }
+
+        case let .clue(clue):
+            VStack(spacing: 20) {
+                Spacer()
+                Text(htmlToPlainText(clue.clue))
+                    .font(.system(size: 38, weight: .bold, design: .serif))
+                    .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.55)
+                    .frame(maxWidth: 900)
+
+                Divider()
+                    .overlay(JeffpardyTheme.gold.opacity(0.5))
+
+                Text(htmlToPlainText(clue.question))
+                    .font(.system(size: 28, weight: .semibold, design: .serif))
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(JeffpardyTheme.gold)
+                    .minimumScaleFactor(0.6)
+                    .frame(maxWidth: 900)
+                Spacer()
+            }
+        }
+    }
+
+    private var rosterSummary: some View {
+        JeffpardyCard {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("PLAYERS")
+                    .font(.caption.weight(.black))
+                    .tracking(1)
+                    .foregroundStyle(.white.opacity(0.6))
+
+                if viewModel.teams.isEmpty {
+                    Text("No players have joined yet.")
+                        .foregroundStyle(.white.opacity(0.65))
+                } else {
+                    ForEach(
+                        viewModel.teams.values.sorted { $0.name < $1.name },
+                        id: \.name
+                    ) { team in
+                        Text(
+                            "\(team.name): \(team.players.map(\.name).joined(separator: ", "))"
+                        )
+                        .font(.headline)
+                    }
+                }
+            }
+            .frame(maxWidth: 520, alignment: .leading)
+        }
+    }
+
+    private var buzzerResults: some View {
+        HStack(spacing: 12) {
+            ForEach(Array(viewModel.topBuzzers.enumerated()), id: \.offset) {
+                index,
+                attempt in
+                VStack(spacing: 4) {
+                    Text(index == 0 ? "WINNER" : "#\(index + 1)")
+                        .font(.caption.weight(.black))
+                        .foregroundStyle(JeffpardyTheme.gold)
+                    Text(attempt.player.name)
+                        .font(.headline.weight(.black))
+                    Text("\(attempt.player.team) • \(attempt.time) ms")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.7))
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity)
+                .background(.black.opacity(index == 0 ? 0.45 : 0.25))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(
+                            index == 0
+                                ? JeffpardyTheme.gold
+                                : Color.white.opacity(0.15),
+                            lineWidth: index == 0 ? 2 : 1
+                        )
+                }
+            }
+        }
+    }
+
+    private var connectionIcon: String {
+        switch viewModel.connectionState {
+        case .connected:
+            "wifi"
+        case .connecting, .reconnecting:
+            "arrow.triangle.2.circlepath"
+        case .disconnected:
+            "wifi.slash"
         }
     }
 
@@ -130,13 +313,42 @@ struct HostSecondaryView: View {
             fragment.count == 12,
             fragment.allSatisfy({ $0.isLetter || $0.isNumber })
         else {
-            errorMessage = "Scan a Jeffpardy Host Secondary QR code."
+            localErrorMessage = "Scan a Jeffpardy Host Secondary QR code."
             return
         }
 
         gameCode = String(fragment.prefix(6)).uppercased()
-        displayURL = url
+        let hostCode = String(fragment.suffix(6)).uppercased()
         nearbyAdvertiser.start(gameCode: gameCode)
+        Task {
+            await viewModel.connect(gameCode: gameCode, hostCode: hostCode)
+        }
+    }
+
+    private func resetDisplay() {
+        nearbyAdvertiser.stop()
+        gameCode = ""
+        Task {
+            await viewModel.disconnect()
+        }
+    }
+
+    private func htmlToPlainText(_ html: String) -> String {
+        guard
+            let data = html.data(using: .utf8),
+            let attributed = try? NSAttributedString(
+                data: data,
+                options: [
+                    .documentType: NSAttributedString.DocumentType.html,
+                    .characterEncoding: String.Encoding.utf8.rawValue,
+                ],
+                documentAttributes: nil
+            )
+        else {
+            return html
+        }
+
+        return attributed.string
     }
 }
 

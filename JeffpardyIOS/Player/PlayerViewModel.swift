@@ -9,6 +9,7 @@ final class PlayerViewModel: ObservableObject {
     @Published private(set) var connectionState = PlayerConnectionState.disconnected
     @Published private(set) var buzzerState = BuzzerState.inactive
     @Published private(set) var isJoined = false
+    @Published private(set) var teams: [String: Team] = [:]
     @Published var errorMessage: String?
 
     private let hubURL: URL
@@ -29,7 +30,40 @@ final class PlayerViewModel: ObservableObject {
         gameCode.count == 6
             && !team.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            && connectionState != .connecting
+            && connectionState == .connected
+    }
+
+    var sortedTeams: [Team] {
+        teams.values.sorted {
+            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        }
+    }
+
+    func connectToLobby(gameCode: String) async {
+        let normalizedCode = gameCode.uppercased()
+        guard normalizedCode.count == 6 else {
+            errorMessage = "Enter a 6-character game code."
+            return
+        }
+
+        await disconnect()
+        self.gameCode = normalizedCode
+        connectionState = .connecting
+        errorMessage = nil
+
+        let newConnection = makeConnection()
+        connection = newConnection
+        await registerHandlers(on: newConnection)
+
+        do {
+            try await newConnection.start()
+            connectionState = .connected
+            try await registerPlayerLobby(on: newConnection)
+        } catch {
+            connectionState = .disconnected
+            errorMessage = "Unable to find that game: \(error.localizedDescription)"
+            connection = nil
+        }
     }
 
     func join() async {
@@ -38,27 +72,24 @@ final class PlayerViewModel: ObservableObject {
             return
         }
 
-        await disconnect()
-        connectionState = .connecting
         errorMessage = nil
 
-        let newConnection = HubConnectionBuilder()
-            .withUrl(url: hubURL.absoluteString)
-            .withAutomaticReconnect()
-            .build()
-
-        connection = newConnection
-        await registerHandlers(on: newConnection)
-
         do {
-            try await newConnection.start()
-            connectionState = .connected
-            try await registerPlayer(on: newConnection)
+            let activeConnection: HubConnection
+            if let connection, connectionState == .connected {
+                activeConnection = connection
+            } else {
+                await connectToLobby(gameCode: gameCode)
+                guard let connection, connectionState == .connected else {
+                    return
+                }
+                activeConnection = connection
+            }
+
+            try await registerPlayer(on: activeConnection)
             isJoined = true
         } catch {
-            connectionState = .disconnected
             errorMessage = "Unable to join the game: \(error.localizedDescription)"
-            connection = nil
         }
     }
 
@@ -78,7 +109,7 @@ final class PlayerViewModel: ObservableObject {
         buzzerState = .submitted(reactionTime: reactionTime)
 
         do {
-            try await connection?.invoke(
+            try await connection?.send(
                 method: "buzzIn",
                 arguments: gameCode,
                 reactionTime,
@@ -102,17 +133,24 @@ final class PlayerViewModel: ObservableObject {
         connectionState = .disconnected
         buzzerState = .inactive
         buzzerActivatedAt = nil
+        teams = [:]
     }
 
     private func registerHandlers(on connection: HubConnection) async {
-        await connection.on("activateBuzzer") { [weak self] (_: String, _: String) in
+        await connection.on("updateUsers") { [weak self] (teams: [String: Team]) in
+            await MainActor.run {
+                self?.teams = teams
+            }
+        }
+
+        await connection.on("activateBuzzer") { [weak self] in
             await MainActor.run {
                 self?.buzzerActivatedAt = .now
                 self?.buzzerState = .ready
             }
         }
 
-        await connection.on("resetBuzzer") { [weak self] (_: String, _: String) in
+        await connection.on("resetBuzzer") { [weak self] in
             await MainActor.run {
                 self?.buzzerActivatedAt = nil
                 self?.buzzerState = .inactive
@@ -142,7 +180,11 @@ final class PlayerViewModel: ObservableObject {
             }
 
             do {
-                try await self.registerPlayer(on: connection)
+                if self.isJoined {
+                    try await self.registerPlayer(on: connection)
+                } else {
+                    try await self.registerPlayerLobby(on: connection)
+                }
                 await MainActor.run {
                     self.connectionState = .connected
                 }
@@ -164,8 +206,22 @@ final class PlayerViewModel: ObservableObject {
         }
     }
 
+    private func makeConnection() -> HubConnection {
+        HubConnectionBuilder()
+            .withUrl(url: hubURL.absoluteString)
+            .withAutomaticReconnect()
+            .build()
+    }
+
+    private func registerPlayerLobby(on connection: HubConnection) async throws {
+        try await connection.send(
+            method: "connectPlayerLobby",
+            arguments: gameCode.uppercased()
+        )
+    }
+
     private func registerPlayer(on connection: HubConnection) async throws {
-        try await connection.invoke(
+        try await connection.send(
             method: "connectPlayer",
             arguments: gameCode.uppercased(),
             team.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -190,4 +246,3 @@ final class PlayerViewModel: ObservableObject {
         }
     }
 }
-

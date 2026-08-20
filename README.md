@@ -2,7 +2,7 @@
 
 An iOS companion for [Jeffpardy](https://github.com/JeffSteinbok/jeffpardy) with two focused experiences:
 
-- **Host Display** scans the host's QR code and embeds the existing `/HostSecondary` web experience.
+- **Host Display** scans the private host QR code and renders rounds, clues, responses, and buzzer results natively from SignalR events.
 - **Player** is a native SwiftUI player registration and buzzer connected directly to the Jeffpardy SignalR hub.
 - **Nearby discovery** advertises the public game code with Multipeer Connectivity so players in the room can select it without typing.
 
@@ -30,6 +30,6 @@ Local HTTP development also requires an App Transport Security exception. Prefer
 
 ## Architecture
 
-The app intentionally has only two top-level tabs. The host display stays on the web so it continues to share presentation behavior with Jeffpardy. The latency-sensitive player buzzer is native and uses the official `SignalRClient` Swift package.
+The app intentionally has only two top-level tabs. Both the host display and latency-sensitive player buzzer are native SwiftUI experiences using the official `SignalRClient` Swift package.
 
 Nearby discovery uses Multipeer Connectivity only to advertise the public game code and device name. It never shares the host code, and all gameplay continues through the existing SignalR server. Manual code entry remains available to players when local discovery is unavailable.

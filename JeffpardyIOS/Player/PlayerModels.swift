@@ -6,6 +6,11 @@ struct Player: Codable, Equatable {
     let connectionId: String
 }
 
+struct Team: Codable, Equatable {
+    let name: String
+    let players: [Player]
+}
+
 struct BuzzerAttempt: Codable {
     let player: Player
     let time: Int
@@ -49,4 +54,3 @@ enum BuzzerState: Equatable {
         }
     }
 }
-
