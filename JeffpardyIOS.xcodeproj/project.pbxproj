@@ -25,6 +25,7 @@
 		896FE6DE070350F6ABF304C5 /* WebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C29FB7AD732E07A0A999D1E /* WebView.swift */; };
 		9EE8969938C3940706613366 /* JeffpardyTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC5E76F59E9DD6EF763FA327 /* JeffpardyTheme.swift */; };
 		BC8D1B0CC5C5C3200C5E428A /* PlayerIdentityStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB1096AF357EF4D8FE7B8864 /* PlayerIdentityStore.swift */; };
+		E006115633AEEA1841B1A6F8 /* AnimatedLaunchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87658731031EE8D2B7DB1F12 /* AnimatedLaunchView.swift */; };
 		FE3231D82155A61C87B3E563 /* NearbyGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5DA866FA886F77B8AD651F6 /* NearbyGame.swift */; };
 /* End PBXBuildFile section */
 
@@ -47,6 +48,7 @@
 		7D07C6A74805860D4A7DDC0E /* JeffpardyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JeffpardyApp.swift; sourceTree = "<group>"; };
 		7E2C7BB96657ECF1703D1A63 /* JeffpardyIOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = JeffpardyIOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		83398C2EC38FDB8B3F773AB7 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		87658731031EE8D2B7DB1F12 /* AnimatedLaunchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedLaunchView.swift; sourceTree = "<group>"; };
 		8805D07C3FA25F5A12F0FF4E /* AppConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfiguration.swift; sourceTree = "<group>"; };
 		9C3A759B5223832B95A7D721 /* PlayerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerViewModel.swift; sourceTree = "<group>"; };
 		A16BC6CCDA4747A8B471919C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -96,6 +98,7 @@
 		599C38EBD75BB5D5B8FEA4A8 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				87658731031EE8D2B7DB1F12 /* AnimatedLaunchView.swift */,
 				7D07C6A74805860D4A7DDC0E /* JeffpardyApp.swift */,
 				83398C2EC38FDB8B3F773AB7 /* RootView.swift */,
 			);
@@ -282,6 +285,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E006115633AEEA1841B1A6F8 /* AnimatedLaunchView.swift in Sources */,
 				00D9B702B4AFD7CE2F4AD7E9 /* AppConfiguration.swift in Sources */,
 				565BD5990B6D6B0D44196101 /* CodeField.swift in Sources */,
 				3317422577CEDB8A3E70C4BD /* HostSecondaryView.swift in Sources */,
@@ -482,7 +486,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = JeffpardyIOS/Resources/JeffpardyIOS.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				INFOPLIST_FILE = JeffpardyIOS/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -503,7 +507,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = JeffpardyIOS/Resources/JeffpardyIOS.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				INFOPLIST_FILE = JeffpardyIOS/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
