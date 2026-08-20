@@ -53,6 +53,11 @@ targets:
         NSBonjourServices:
           - _jeffpardy._tcp
         JEFFPARDY_BASE_URL: https://jeffpardy.azurewebsites.net
+    entitlements:
+      path: JeffpardyIOS/Resources/JeffpardyIOS.entitlements
+      properties:
+        com.apple.developer.associated-domains:
+          - applinks:jeffpardy.azurewebsites.net
   JeffpardyIOSTests:
     type: bundle.unit-test
     platform: iOS

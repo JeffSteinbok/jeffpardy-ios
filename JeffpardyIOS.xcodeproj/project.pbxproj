@@ -59,6 +59,7 @@
 		CE1606E9F9FFD5C0AA7ED40A /* NearbyGameAdvertiser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NearbyGameAdvertiser.swift; sourceTree = "<group>"; };
 		EB1096AF357EF4D8FE7B8864 /* PlayerIdentityStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerIdentityStore.swift; sourceTree = "<group>"; };
 		EB3F84E53DCAE2732AF9C4D0 /* AppConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfigurationTests.swift; sourceTree = "<group>"; };
+		EF4DFF7DFD5062B6869386E3 /* JeffpardyIOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = JeffpardyIOS.entitlements; sourceTree = "<group>"; };
 		F0618576B71A58B0A6CF4EC1 /* JeffpardyIOSTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = JeffpardyIOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -126,6 +127,7 @@
 			children = (
 				459D8680A769820B58ABB8D9 /* Assets.xcassets */,
 				A16BC6CCDA4747A8B471919C /* Info.plist */,
+				EF4DFF7DFD5062B6869386E3 /* JeffpardyIOS.entitlements */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -478,6 +480,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = JeffpardyIOS/Resources/JeffpardyIOS.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = JeffpardyIOS/Resources/Info.plist;
@@ -498,6 +501,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = JeffpardyIOS/Resources/JeffpardyIOS.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = JeffpardyIOS/Resources/Info.plist;
