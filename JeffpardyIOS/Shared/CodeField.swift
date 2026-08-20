@@ -5,11 +5,15 @@ struct CodeField: View {
     @Binding var text: String
 
     var body: some View {
-        TextField(title, text: $text)
+        TextField(
+            "",
+            text: $text,
+            prompt: Text(title).foregroundStyle(.white.opacity(0.55))
+        )
             .textInputAutocapitalization(.characters)
             .autocorrectionDisabled()
             .keyboardType(.asciiCapable)
-            .textFieldStyle(.roundedBorder)
+            .textFieldStyle(JeffpardyTextFieldStyle())
             .onChange(of: text) { _, newValue in
                 text = String(
                     newValue

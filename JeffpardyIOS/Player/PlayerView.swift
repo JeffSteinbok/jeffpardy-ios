@@ -5,6 +5,8 @@ struct PlayerView: View {
     @StateObject private var viewModel = PlayerViewModel()
     @StateObject private var nearbyBrowser = NearbyGameBrowser()
     @Environment(\.scenePhase) private var scenePhase
+    @State private var hasSelectedGame = false
+    @State private var isShowingScanner = false
 
     var body: some View {
         NavigationStack {
@@ -15,7 +17,11 @@ struct PlayerView: View {
                     joinView
                 }
             }
-            .navigationTitle("Player")
+            .navigationTitle("PLAYER")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(JeffpardyTheme.chrome, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .alert(
                 "Jeffpardy",
                 isPresented: Binding(
@@ -47,6 +53,9 @@ struct PlayerView: View {
         .onDisappear {
             nearbyBrowser.stop()
         }
+        .fullScreenCover(isPresented: $isShowingScanner) {
+            playerQRScanner
+        }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active, viewModel.isJoined else {
                 return
@@ -58,64 +67,188 @@ struct PlayerView: View {
     }
 
     private var joinView: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "hand.tap.fill")
-                .font(.system(size: 64))
-                .foregroundStyle(JeffpardyTheme.gold)
+        ScrollView {
+            VStack(spacing: 28) {
+                JeffpardyLogo()
+                    .frame(maxWidth: 340)
+                    .padding(.top, 36)
 
-            Text("Join a Game")
-                .font(.largeTitle.bold())
+                Text(hasSelectedGame ? "WHO'S PLAYING?" : "JOIN A GAME")
+                    .font(.title.weight(.black))
+                    .tracking(2)
+                    .shadow(color: .black, radius: 2, x: 2, y: 2)
 
-            VStack(spacing: 12) {
-                if !nearbyBrowser.games.isEmpty {
-                    nearbyGames
-                }
-
-                CodeField(title: "6-character game code", text: $viewModel.gameCode)
-
-                TextField("Team name", text: $viewModel.team)
-                    .textInputAutocapitalization(.words)
-                    .textFieldStyle(.roundedBorder)
-
-                TextField("Player name", text: $viewModel.name)
-                    .textInputAutocapitalization(.words)
-                    .textFieldStyle(.roundedBorder)
-            }
-            .frame(maxWidth: 420)
-
-            Button {
-                Task {
-                    await viewModel.join()
-                }
-            } label: {
-                if viewModel.connectionState == .connecting {
-                    ProgressView()
-                        .tint(.black)
-                        .frame(maxWidth: .infinity)
+                if hasSelectedGame {
+                    playerDetailsCard
                 } else {
-                    Text("Join Game")
-                        .frame(maxWidth: .infinity)
+                    gameSelectionCard
                 }
+
+                Button {
+                    if hasSelectedGame {
+                        Task {
+                            await viewModel.join()
+                        }
+                    } else {
+                        hasSelectedGame = true
+                    }
+                } label: {
+                    if viewModel.connectionState == .connecting {
+                        ProgressView()
+                            .tint(.white)
+                            .frame(maxWidth: .infinity)
+                    } else {
+                        Label(
+                            hasSelectedGame ? "Join Game" : "Continue",
+                            systemImage: hasSelectedGame ? "play.fill" : "arrow.right"
+                        )
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .buttonStyle(JeffpardyPrimaryButtonStyle())
+                .frame(maxWidth: 440)
+                .disabled(hasSelectedGame ? !viewModel.canJoin : viewModel.gameCode.count != 6)
+                .opacity((hasSelectedGame ? viewModel.canJoin : viewModel.gameCode.count == 6) ? 1 : 0.5)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(JeffpardyTheme.gold)
-            .foregroundStyle(.black)
-            .frame(maxWidth: 420)
-            .disabled(!viewModel.canJoin)
+            .padding(.horizontal, 24)
+            .padding(.bottom, 48)
         }
-        .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .jeffpardyBackground()
+    }
+
+    private var gameSelectionCard: some View {
+        JeffpardyCard {
+            VStack(spacing: 16) {
+                if !nearbyBrowser.games.isEmpty {
+                    nearbyGames
+                    labeledDivider("OR")
+                }
+
+                Button {
+                    isShowingScanner = true
+                } label: {
+                    Label("Scan Player QR Code", systemImage: "qrcode.viewfinder")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(JeffpardyPrimaryButtonStyle())
+                .disabled(!QRScannerView.isSupported)
+                .opacity(QRScannerView.isSupported ? 1 : 0.5)
+
+                labeledDivider("OR ENTER CODE")
+                CodeField(title: "6-character game code", text: $viewModel.gameCode)
+            }
+        }
+        .frame(maxWidth: 440)
+    }
+
+    private var playerDetailsCard: some View {
+        JeffpardyCard {
+            VStack(spacing: 14) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("GAME CODE")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.white.opacity(0.55))
+                        Text(viewModel.gameCode)
+                            .font(.title2.monospaced().weight(.black))
+                    }
+
+                    Spacer()
+
+                    Button("Change") {
+                        hasSelectedGame = false
+                    }
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(JeffpardyTheme.gold)
+                }
+
+                Divider()
+                    .overlay(.white.opacity(0.15))
+
+                TextField(
+                    "",
+                    text: $viewModel.team,
+                    prompt: Text("Team name").foregroundStyle(.white.opacity(0.55))
+                )
+                .textInputAutocapitalization(.words)
+                .textFieldStyle(JeffpardyTextFieldStyle())
+
+                TextField(
+                    "",
+                    text: $viewModel.name,
+                    prompt: Text("Player name").foregroundStyle(.white.opacity(0.55))
+                )
+                .textInputAutocapitalization(.words)
+                .textFieldStyle(JeffpardyTextFieldStyle())
+            }
+        }
+        .frame(maxWidth: 440)
+    }
+
+    private func labeledDivider(_ label: String) -> some View {
+        HStack {
+            Rectangle()
+                .fill(.white.opacity(0.15))
+                .frame(height: 1)
+            Text(label)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.white.opacity(0.55))
+            Rectangle()
+                .fill(.white.opacity(0.15))
+                .frame(height: 1)
+        }
+    }
+
+    private var playerQRScanner: some View {
+        NavigationStack {
+            ZStack {
+                QRScannerView { payload in
+                    guard
+                        let url = URL(string: payload),
+                        let gameCode = AppConfiguration.gameCode(fromPlayerURL: url)
+                    else {
+                        viewModel.errorMessage = "Scan a Jeffpardy player QR code."
+                        return
+                    }
+
+                    selectGame(gameCode)
+                    isShowingScanner = false
+                }
+                .ignoresSafeArea()
+
+                VStack {
+                    Spacer()
+                    JeffpardyCard {
+                        Label("SCAN PLAYER QR CODE", systemImage: "qrcode.viewfinder")
+                            .font(.headline.weight(.black))
+                            .tracking(0.8)
+                    }
+                    .padding(24)
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") {
+                        isShowingScanner = false
+                    }
+                }
+            }
+            .toolbarBackground(JeffpardyTheme.chrome, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+        }
     }
 
     private var nearbyGames: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Nearby Games")
-                .font(.headline)
+                .font(.headline.weight(.black))
+                .tracking(0.8)
 
             ForEach(nearbyBrowser.games) { game in
                 Button {
-                    viewModel.gameCode = game.gameCode
+                    selectGame(game.gameCode)
                 } label: {
                     HStack {
                         Image(systemName: "dot.radiowaves.left.and.right")
@@ -136,28 +269,46 @@ struct PlayerView: View {
                         }
                     }
                     .padding(12)
-                    .background(.white.opacity(0.12))
+                    .background(.black.opacity(0.25))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(.white.opacity(0.15), lineWidth: 1)
+                    }
                 }
                 .buttonStyle(.plain)
             }
         }
     }
 
+    private func selectGame(_ gameCode: String) {
+        viewModel.gameCode = gameCode.uppercased()
+        hasSelectedGame = true
+    }
+
     private var buzzerView: some View {
         VStack(spacing: 24) {
-            HStack {
-                Label(viewModel.connectionState.label, systemImage: connectionIcon)
-                Spacer()
-                Text(viewModel.gameCode.uppercased())
-                    .font(.headline.monospaced())
+            JeffpardyLogo()
+                .frame(maxWidth: 280)
+
+            JeffpardyCard {
+                HStack {
+                    Label(viewModel.connectionState.label, systemImage: connectionIcon)
+                    Spacer()
+                    Text(viewModel.gameCode.uppercased())
+                        .font(.headline.monospaced())
+                }
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(.white.opacity(0.78))
             }
-            .foregroundStyle(.white.opacity(0.75))
 
             Spacer()
 
             Text("\(viewModel.name) • \(viewModel.team)")
-                .font(.title2.bold())
+                .font(.title2.weight(.black))
+                .textCase(.uppercase)
+                .tracking(1)
+                .shadow(color: .black, radius: 2, x: 2, y: 2)
 
             Button {
                 buzz()
@@ -174,19 +325,35 @@ struct PlayerView: View {
                 }
                 .foregroundStyle(.white)
                 .frame(width: 270, height: 270)
-                .background(buzzerColor)
+                .background(
+                    RadialGradient(
+                        colors: [buzzerColor.opacity(0.95), buzzerColor.opacity(0.48)],
+                        center: .topLeading,
+                        startRadius: 10,
+                        endRadius: 260
+                    )
+                )
                 .clipShape(Circle())
                 .overlay {
                     Circle()
-                        .stroke(.white.opacity(0.75), lineWidth: 8)
+                        .stroke(
+                            LinearGradient(
+                                colors: [.white.opacity(0.9), JeffpardyTheme.gold.opacity(0.75)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 8
+                        )
                 }
-                .shadow(color: buzzerColor.opacity(0.65), radius: 24)
+                .shadow(color: .black.opacity(0.55), radius: 14, y: 10)
+                .shadow(color: buzzerColor.opacity(0.65), radius: 26)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Jeffpardy buzzer")
             .accessibilityHint("Tap when the buzzer turns green")
 
             Text(buzzerHelp)
+                .font(.headline)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.white.opacity(0.8))
                 .frame(minHeight: 44)

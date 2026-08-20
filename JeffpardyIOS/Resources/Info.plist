@@ -28,6 +28,8 @@
 	<array>
 		<string>_jeffpardy._tcp</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Jeffpardy uses the camera to scan a host secondary-window QR code.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Jeffpardy uses the local network to show nearby games you can join.</string>
 	<key>UIApplicationSceneManifest</key>

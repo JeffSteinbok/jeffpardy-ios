@@ -30,5 +30,19 @@ enum AppConfiguration {
 
         return url.absoluteURL
     }
-}
 
+    static func gameCode(fromPlayerURL url: URL) -> String? {
+        guard
+            ["http", "https"].contains(url.scheme?.lowercased() ?? ""),
+            url.host?.caseInsensitiveCompare(baseURL.host ?? "") == .orderedSame,
+            url.path.lowercased() == "/player",
+            let fragment = url.fragment,
+            fragment.count == 6,
+            fragment.allSatisfy({ $0.isLetter || $0.isNumber })
+        else {
+            return nil
+        }
+
+        return fragment.uppercased()
+    }
+}

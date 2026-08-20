@@ -19,6 +19,7 @@
 		5865C03C56F1B461D56A825C /* NearbyGameAdvertiser.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1606E9F9FFD5C0AA7ED40A /* NearbyGameAdvertiser.swift */; };
 		69961A6C307436007C1EAFD0 /* JeffpardyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D07C6A74805860D4A7DDC0E /* JeffpardyApp.swift */; };
 		69E1CA87C5C99624F9AFEDE6 /* PlayerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C3A759B5223832B95A7D721 /* PlayerViewModel.swift */; };
+		6F0B04329D2CECB478F7C21D /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABE1256A3A19334A1F535720 /* QRScannerView.swift */; };
 		75EB6585CF6653398C87CD6E /* PlayerIdentityStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCD0E1E7DA58D0634834BAC3 /* PlayerIdentityStoreTests.swift */; };
 		849D2305169B553B5E7BFDD8 /* AppConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB3F84E53DCAE2732AF9C4D0 /* AppConfigurationTests.swift */; };
 		896FE6DE070350F6ABF304C5 /* WebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C29FB7AD732E07A0A999D1E /* WebView.swift */; };
@@ -50,6 +51,7 @@
 		9C3A759B5223832B95A7D721 /* PlayerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerViewModel.swift; sourceTree = "<group>"; };
 		A16BC6CCDA4747A8B471919C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		A5DA866FA886F77B8AD651F6 /* NearbyGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NearbyGame.swift; sourceTree = "<group>"; };
+		ABE1256A3A19334A1F535720 /* QRScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerView.swift; sourceTree = "<group>"; };
 		AC5E76F59E9DD6EF763FA327 /* JeffpardyTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JeffpardyTheme.swift; sourceTree = "<group>"; };
 		B791AD987DA38F68D49FDF9B /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
 		BCC2105CACD03E21A27FB47F /* PlayerModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerModels.swift; sourceTree = "<group>"; };
@@ -113,6 +115,7 @@
 			isa = PBXGroup;
 			children = (
 				46F6F295832951F8EAD6465F /* HostSecondaryView.swift */,
+				ABE1256A3A19334A1F535720 /* QRScannerView.swift */,
 				3C29FB7AD732E07A0A999D1E /* WebView.swift */,
 			);
 			path = HostSecondary;
@@ -229,10 +232,12 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					12D316F206C8BD6CFD61D071 = {
-						DevelopmentTeam = "";
+						DevelopmentTeam = Y7KVX7666P;
+						ProvisioningStyle = Automatic;
 					};
 					923E89DEB221DE9D6F6ACFE0 = {
-						DevelopmentTeam = "";
+						DevelopmentTeam = Y7KVX7666P;
+						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -287,6 +292,7 @@
 				04A996AFD3E68B1F5EC43766 /* PlayerModels.swift in Sources */,
 				20EB1A856D148A6F041F5152 /* PlayerView.swift in Sources */,
 				69E1CA87C5C99624F9AFEDE6 /* PlayerViewModel.swift in Sources */,
+				6F0B04329D2CECB478F7C21D /* QRScannerView.swift in Sources */,
 				3CFA87B3BF2988A1F7D566F1 /* RootView.swift in Sources */,
 				896FE6DE070350F6ABF304C5 /* WebView.swift in Sources */,
 			);
@@ -321,7 +327,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.jeffsteinbok.jeffpardy.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = net.steinbok.JeffpardyTests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/JeffpardyIOS.app/JeffpardyIOS";
@@ -361,9 +367,10 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = Y7KVX7666P;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -425,9 +432,10 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = Y7KVX7666P;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -458,7 +466,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.jeffsteinbok.jeffpardy.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = net.steinbok.JeffpardyTests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/JeffpardyIOS.app/JeffpardyIOS";
@@ -471,12 +479,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = JeffpardyIOS/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.jeffsteinbok.jeffpardy;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = net.steinbok.Jeffpardy;
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -489,12 +499,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = JeffpardyIOS/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.jeffsteinbok.jeffpardy;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = net.steinbok.Jeffpardy;
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
