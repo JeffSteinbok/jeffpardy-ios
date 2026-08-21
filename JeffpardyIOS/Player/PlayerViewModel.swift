@@ -10,6 +10,8 @@ final class PlayerViewModel: ObservableObject {
     @Published private(set) var buzzerState = BuzzerState.inactive
     @Published private(set) var isJoined = false
     @Published private(set) var teams: [String: Team] = [:]
+    @Published private(set) var scores: [String: Int] = [:]
+    @Published private(set) var isGameOver = false
     @Published var errorMessage: String?
 
     private let hubURL: URL
@@ -35,7 +37,12 @@ final class PlayerViewModel: ObservableObject {
 
     var sortedTeams: [Team] {
         teams.values.sorted {
-            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+            let leftScore = scores[$0.name] ?? 0
+            let rightScore = scores[$1.name] ?? 0
+            if leftScore != rightScore {
+                return leftScore > rightScore
+            }
+            return $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
         }
     }
 
@@ -134,12 +141,27 @@ final class PlayerViewModel: ObservableObject {
         buzzerState = .inactive
         buzzerActivatedAt = nil
         teams = [:]
+        scores = [:]
+        isGameOver = false
     }
 
     private func registerHandlers(on connection: HubConnection) async {
         await connection.on("updateUsers") { [weak self] (teams: [String: Team]) in
             await MainActor.run {
                 self?.teams = teams
+            }
+
+            await connection.on("broadcastScores") { [weak self] (scores: [String: Int]) in
+                await MainActor.run {
+                    self?.scores = scores
+                }
+            }
+
+            await connection.on("endGame") { [weak self] (scores: [String: Int]) in
+                await MainActor.run {
+                    self?.scores = scores
+                    self?.isGameOver = true
+                }
             }
         }
 

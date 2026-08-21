@@ -44,16 +44,16 @@ struct AnimatedLaunchView: View {
             return
         }
 
-        try? await Task.sleep(for: .milliseconds(280))
+        try? await Task.sleep(for: .milliseconds(850))
         guard !Task.isCancelled else {
             return
         }
 
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.82)) {
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.84)) {
             isLogoRaised = true
         }
 
-        try? await Task.sleep(for: .milliseconds(180))
+        try? await Task.sleep(for: .milliseconds(240))
         guard !Task.isCancelled else {
             return
         }
@@ -74,4 +74,3 @@ struct AnimatedLaunchView: View {
 #Preview {
     AnimatedLaunchView()
 }
-

@@ -3,6 +3,7 @@ import UIKit
 
 struct PlayerView: View {
     @Binding var pendingGameCode: String?
+    let onExit: () -> Void
     @StateObject private var viewModel = PlayerViewModel()
     @StateObject private var nearbyBrowser = NearbyGameBrowser()
     @Environment(\.scenePhase) private var scenePhase
@@ -18,10 +19,8 @@ struct PlayerView: View {
                     joinView
                 }
             }
-            .navigationTitle("PLAYER")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(JeffpardyTheme.chrome, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
+            .navigationTitle("")
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .alert(
                 "Jeffpardy",
@@ -46,6 +45,17 @@ struct PlayerView: View {
                                 message: Text("Join my Jeffpardy game \(viewModel.gameCode).")
                             ) {
                                 Label("Invite", systemImage: "square.and.arrow.up")
+                            }
+                        }
+                    } else {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button {
+                                Task {
+                                    await viewModel.disconnect()
+                                    onExit()
+                                }
+                            } label: {
+                                Label("Home", systemImage: "chevron.left")
                             }
                         }
                     }
@@ -387,82 +397,131 @@ struct PlayerView: View {
     }
 
     private var buzzerView: some View {
-        VStack(spacing: 24) {
-            JeffpardyLogo()
-                .frame(maxWidth: 280)
+        ScrollView {
+            VStack(spacing: 22) {
+                JeffpardyLogo()
+                    .frame(maxWidth: 280)
 
-            JeffpardyCard {
-                HStack {
-                    Label(viewModel.connectionState.label, systemImage: connectionIcon)
-                    Spacer()
-                    Text(viewModel.gameCode.uppercased())
-                        .font(.headline.monospaced())
-                }
-                .font(.subheadline.weight(.bold))
-                .foregroundStyle(.white.opacity(0.78))
-            }
-
-            Spacer()
-
-            Text("\(viewModel.name) • \(viewModel.team)")
-                .font(.title2.weight(.black))
-                .textCase(.uppercase)
-                .tracking(1)
-                .shadow(color: .black, radius: 2, x: 2, y: 2)
-
-            Button {
-                buzz()
-            } label: {
-                VStack(spacing: 8) {
-                    Text(viewModel.buzzerState.label)
-                        .font(.system(size: 42, weight: .black, design: .rounded))
-                        .minimumScaleFactor(0.5)
-
-                    if case let .winner(_, team, reactionTime) = viewModel.buzzerState {
-                        Text("\(team) • \(reactionTime) ms")
-                            .font(.headline)
+                JeffpardyCard {
+                    HStack {
+                        Label(viewModel.connectionState.label, systemImage: connectionIcon)
+                        Spacer()
+                        Text(viewModel.gameCode.uppercased())
+                            .font(.headline.monospaced())
                     }
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(.white.opacity(0.78))
                 }
-                .foregroundStyle(.white)
-                .frame(width: 270, height: 270)
-                .background(
-                    RadialGradient(
-                        colors: [buzzerColor.opacity(0.95), buzzerColor.opacity(0.48)],
-                        center: .topLeading,
-                        startRadius: 10,
-                        endRadius: 260
-                    )
-                )
-                .clipShape(Circle())
-                .overlay {
-                    Circle()
-                        .stroke(
-                            LinearGradient(
-                                colors: [.white.opacity(0.9), JeffpardyTheme.gold.opacity(0.75)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 8
+
+                Text("\(viewModel.name) • \(viewModel.team)")
+                    .font(.title2.weight(.black))
+                    .textCase(.uppercase)
+                    .tracking(1)
+                    .shadow(color: .black, radius: 2, x: 2, y: 2)
+
+                Button {
+                    buzz()
+                } label: {
+                    VStack(spacing: 8) {
+                        Text(viewModel.buzzerState.label)
+                            .font(.system(size: 42, weight: .black, design: .rounded))
+                            .minimumScaleFactor(0.5)
+
+                        if case let .winner(_, team, reactionTime) = viewModel.buzzerState {
+                            Text("\(team) • \(reactionTime) ms")
+                                .font(.headline)
+                        }
+                    }
+                    .foregroundStyle(.white)
+                    .frame(width: 250, height: 250)
+                    .background(
+                        RadialGradient(
+                            colors: [buzzerColor.opacity(0.95), buzzerColor.opacity(0.48)],
+                            center: .topLeading,
+                            startRadius: 10,
+                            endRadius: 250
                         )
+                    )
+                    .clipShape(Circle())
+                    .overlay {
+                        Circle()
+                            .stroke(
+                                LinearGradient(
+                                    colors: [.white.opacity(0.9), JeffpardyTheme.gold.opacity(0.75)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 8
+                            )
+                    }
+                    .shadow(color: .black.opacity(0.55), radius: 14, y: 10)
+                    .shadow(color: buzzerColor.opacity(0.65), radius: 26)
                 }
-                .shadow(color: .black.opacity(0.55), radius: 14, y: 10)
-                .shadow(color: buzzerColor.opacity(0.65), radius: 26)
+                .buttonStyle(.plain)
+                .accessibilityLabel("Jeffpardy buzzer")
+                .accessibilityHint("Tap when the buzzer turns green")
+
+                Text(buzzerHelp)
+                    .font(.headline)
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.white.opacity(0.8))
+                    .frame(minHeight: 44)
+
+                playerScoreboard
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Jeffpardy buzzer")
-            .accessibilityHint("Tap when the buzzer turns green")
-
-            Text(buzzerHelp)
-                .font(.headline)
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.white.opacity(0.8))
-                .frame(minHeight: 44)
-
-            Spacer()
+            .padding(24)
+            .padding(.bottom, 20)
         }
-        .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .jeffpardyBackground()
+    }
+
+    private var playerScoreboard: some View {
+        JeffpardyCard {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(viewModel.isGameOver ? "FINAL SCORES" : "SCORES")
+                    .font(.headline.weight(.black))
+                    .tracking(1)
+
+                if viewModel.sortedTeams.isEmpty {
+                    Text("Waiting for other players...")
+                        .foregroundStyle(.white.opacity(0.6))
+                } else {
+                    ForEach(
+                        Array(viewModel.sortedTeams.enumerated()),
+                        id: \.element.name
+                    ) { index, team in
+                        HStack(spacing: 12) {
+                            if viewModel.isGameOver && index == 0 {
+                                Image(systemName: "trophy.fill")
+                                    .foregroundStyle(JeffpardyTheme.gold)
+                            }
+
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(team.name)
+                                    .font(.headline.weight(.black))
+                                Text(team.players.map(\.name).joined(separator: ", "))
+                                    .font(.caption)
+                                    .foregroundStyle(.white.opacity(0.65))
+                            }
+
+                            Spacer()
+
+                            Text((viewModel.scores[team.name] ?? 0).formatted())
+                                .font(.title3.monospacedDigit().weight(.black))
+                                .foregroundStyle(JeffpardyTheme.gold)
+                        }
+
+                        if index < viewModel.sortedTeams.count - 1 {
+                            Divider()
+                                .overlay(.white.opacity(0.12))
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(maxWidth: 520)
     }
 
     private var buzzerColor: Color {
@@ -516,5 +575,5 @@ struct PlayerView: View {
 }
 
 #Preview {
-    PlayerView(pendingGameCode: .constant(nil))
+    PlayerView(pendingGameCode: .constant(nil), onExit: {})
 }

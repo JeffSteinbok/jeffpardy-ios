@@ -2,6 +2,7 @@ import SwiftUI
 import UIKit
 
 struct HostSecondaryView: View {
+    let onExit: () -> Void
     @State private var gameCode = ""
     @State private var localErrorMessage: String?
     @StateObject private var nearbyAdvertiser = NearbyGameAdvertiser()
@@ -16,10 +17,8 @@ struct HostSecondaryView: View {
                     nativeDisplay
                 }
             }
-            .navigationTitle("HOST DISPLAY")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(JeffpardyTheme.chrome, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
+            .navigationTitle("")
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .alert(
                 "Jeffpardy",
@@ -43,9 +42,21 @@ struct HostSecondaryView: View {
                 Text(localErrorMessage ?? viewModel.errorMessage ?? "")
             }
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        nearbyAdvertiser.stop()
+                        Task {
+                            await viewModel.disconnect()
+                            onExit()
+                        }
+                    } label: {
+                        Label("Setup", systemImage: "chevron.left")
+                    }
+                }
+
                 if !gameCode.isEmpty {
                     if let playerURL = AppConfiguration.playerURL(gameCode: gameCode) {
-                        ToolbarItem(placement: .topBarLeading) {
+                        ToolbarItem(placement: .secondaryAction) {
                             ShareLink(
                                 item: playerURL,
                                 subject: Text("Join my Jeffpardy game"),
@@ -353,5 +364,5 @@ struct HostSecondaryView: View {
 }
 
 #Preview {
-    HostSecondaryView()
+    HostSecondaryView(onExit: {})
 }
