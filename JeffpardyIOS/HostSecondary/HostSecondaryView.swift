@@ -54,22 +54,15 @@ struct HostSecondaryView: View {
                     }
                 }
 
-                if !gameCode.isEmpty {
-                    if let playerURL = AppConfiguration.playerURL(gameCode: gameCode) {
-                        ToolbarItem(placement: .secondaryAction) {
-                            ShareLink(
-                                item: playerURL,
-                                subject: Text("Join my Jeffpardy game"),
-                                message: Text("Join my Jeffpardy game \(gameCode).")
-                            ) {
-                                Label("Invite", systemImage: "square.and.arrow.up")
-                            }
-                        }
-                    }
-
+                if !gameCode.isEmpty,
+                   let playerURL = AppConfiguration.playerURL(gameCode: gameCode) {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button("Scan Another") {
-                            resetDisplay()
+                        ShareLink(
+                            item: playerURL,
+                            subject: Text("Join my Jeffpardy game"),
+                            message: Text("Join my Jeffpardy game \(gameCode).")
+                        ) {
+                            Label("Invite", systemImage: "square.and.arrow.up")
                         }
                     }
                 }
@@ -110,6 +103,7 @@ struct HostSecondaryView: View {
                         }
                     }
                     .padding(24)
+                    .foregroundStyle(.white)
                 }
             }
         } else {
@@ -137,13 +131,14 @@ struct HostSecondaryView: View {
     }
 
     private var nativeDisplay: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 14) {
             HStack {
                 Label(
-                    viewModel.connectionState.label,
+                    viewModel.connectionState.label.uppercased(),
                     systemImage: connectionIcon
                 )
-                .font(.subheadline.weight(.bold))
+                .font(.caption.weight(.black))
+                .tracking(0.7)
                 .foregroundStyle(
                     viewModel.isConnected
                         ? Color.green
@@ -153,7 +148,8 @@ struct HostSecondaryView: View {
                 Spacer()
 
                 Text(gameCode)
-                    .font(.headline.monospaced().weight(.black))
+                    .font(.headline.weight(.black))
+                    .tracking(1.5)
                     .foregroundStyle(JeffpardyTheme.gold)
             }
 
@@ -172,16 +168,16 @@ struct HostSecondaryView: View {
     private var displayContent: some View {
         switch viewModel.displayState {
         case .waiting:
-            VStack(spacing: 24) {
-                Spacer()
+            VStack(spacing: 14) {
                 JeffpardyLogo()
-                    .frame(maxWidth: 500)
+                    .frame(maxWidth: 280)
+                    .padding(.top, 8)
                 Text(
                     viewModel.isConnected
                         ? "Waiting for the host to start the round"
                         : "Connecting to the game"
                 )
-                .font(.title2.weight(.bold))
+                .font(.headline.weight(.semibold))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.white.opacity(0.75))
                 rosterSummary
@@ -190,31 +186,36 @@ struct HostSecondaryView: View {
 
         case let .round(round):
             ScrollView {
-                VStack(spacing: 20) {
+                VStack(spacing: 14) {
                     Text("\(round.name.uppercased()) ROUND")
-                        .font(.system(size: 34, weight: .black))
+                        .font(.system(size: 28, weight: .black))
                         .fontWidth(.condensed)
                         .tracking(1.4)
                         .shadow(color: .black, radius: 2, x: 2, y: 2)
 
                     LazyVGrid(
-                        columns: [GridItem(.adaptive(minimum: 220), spacing: 14)],
-                        spacing: 14
+                        columns: [GridItem(.adaptive(minimum: 180), spacing: 10)],
+                        spacing: 10
                     ) {
                         ForEach(round.categories, id: \.title) { category in
                             JeffpardyCard {
-                                VStack(spacing: 8) {
+                                VStack(spacing: 4) {
                                     Text(category.title.uppercased())
-                                        .font(.title3.weight(.black))
+                                        .font(.headline.weight(.black))
                                         .multilineTextAlignment(.center)
+                                    if let airDate = category.formattedAirDate {
+                                        Text(airDate)
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(JeffpardyTheme.gold)
+                                    }
                                     if let comment = category.comment, !comment.isEmpty {
                                         Text(comment)
-                                            .font(.subheadline)
+                                            .font(.caption)
                                             .foregroundStyle(.white.opacity(0.65))
                                             .multilineTextAlignment(.center)
                                     }
                                 }
-                                .frame(maxWidth: .infinity, minHeight: 90)
+                                .frame(maxWidth: .infinity, minHeight: 54)
                             }
                         }
                     }
@@ -225,7 +226,7 @@ struct HostSecondaryView: View {
             VStack(spacing: 20) {
                 Spacer()
                 Text(htmlToPlainText(clue.clue))
-                    .font(.system(size: 38, weight: .bold, design: .serif))
+                    .font(.system(size: 38, weight: .bold))
                     .multilineTextAlignment(.center)
                     .minimumScaleFactor(0.55)
                     .frame(maxWidth: 900)
@@ -234,7 +235,7 @@ struct HostSecondaryView: View {
                     .overlay(JeffpardyTheme.gold.opacity(0.5))
 
                 Text(htmlToPlainText(clue.question))
-                    .font(.system(size: 28, weight: .semibold, design: .serif))
+                    .font(.system(size: 28, weight: .semibold))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(JeffpardyTheme.gold)
                     .minimumScaleFactor(0.6)
@@ -333,14 +334,6 @@ struct HostSecondaryView: View {
         nearbyAdvertiser.start(gameCode: gameCode)
         Task {
             await viewModel.connect(gameCode: gameCode, hostCode: hostCode)
-        }
-    }
-
-    private func resetDisplay() {
-        nearbyAdvertiser.stop()
-        gameCode = ""
-        Task {
-            await viewModel.disconnect()
         }
     }
 

@@ -35,7 +35,7 @@ final class SignalRModelDecodingTests: XCTestCase {
                 {
                   "title": "SCIENCE",
                   "comment": "Experiments",
-                  "airDate": "2026-08-20T00:00:00Z",
+                  "airDate": "2026-08-20T00:00:00",
                   "clues": []
                 }
               ]
@@ -47,6 +47,7 @@ final class SignalRModelDecodingTests: XCTestCase {
 
         XCTAssertEqual(round.name, "Jeffpardy")
         XCTAssertEqual(round.categories.first?.title, "SCIENCE")
+        XCTAssertEqual(round.categories.first?.formattedAirDate, "8/20/2026")
     }
 
     func testHostClueDecodesServerPayload() throws {
@@ -64,4 +65,3 @@ final class SignalRModelDecodingTests: XCTestCase {
         XCTAssertEqual(clue.question, "What is Mars?")
     }
 }
-

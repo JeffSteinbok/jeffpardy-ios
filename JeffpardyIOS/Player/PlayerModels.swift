@@ -53,4 +53,12 @@ enum BuzzerState: Equatable {
             name
         }
     }
+
+}
+
+enum FinalJeffpardyPhase: Equatable {
+    case inactive
+    case wager
+    case response
+    case ended
 }

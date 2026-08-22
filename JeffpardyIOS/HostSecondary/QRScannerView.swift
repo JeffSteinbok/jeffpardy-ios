@@ -19,7 +19,7 @@ struct QRScannerView: UIViewControllerRepresentable {
             recognizesMultipleItems: false,
             isHighFrameRateTrackingEnabled: true,
             isPinchToZoomEnabled: true,
-            isGuidanceEnabled: true,
+            isGuidanceEnabled: false,
             isHighlightingEnabled: true
         )
         scanner.delegate = context.coordinator
@@ -62,4 +62,3 @@ struct QRScannerView: UIViewControllerRepresentable {
         }
     }
 }
-

@@ -33,3 +33,20 @@ Local HTTP development also requires an App Transport Security exception. Prefer
 The launch flow asks whether to play or host. Host setup directs the user to the Jeffpardy website to create a game, then opens the private host-code scanner. Both the host display and latency-sensitive player buzzer are native SwiftUI experiences using the official `SignalRClient` Swift package.
 
 Nearby discovery uses Multipeer Connectivity only to advertise the public game code and device name. It never shares the host code, and all gameplay continues through the existing SignalR server. Manual code entry remains available to players when local discovery is unavailable.
+
+## TestFlight automation
+
+`Publish TestFlight` can be started manually from the repository's **Actions** tab. `Ensure Fresh TestFlight Build` runs weekly and publishes through the same workflow when the newest App Store Connect build is at least 60 days old.
+
+Configure these repository values under **Settings → Secrets and variables → Actions**:
+
+| Type | Name | Value |
+| --- | --- | --- |
+| Variable | `APPSTORE_APP_ID` | Numeric App Store Connect app ID |
+| Variable | `APPSTORE_ISSUER_ID` | App Store Connect API issuer ID |
+| Variable | `APPSTORE_API_KEY_ID` | App Store Connect API key ID |
+| Secret | `APPSTORE_API_PRIVATE_KEY` | Full contents of the `.p8` API private key |
+| Secret | `APPSTORE_CERTIFICATES_FILE_BASE64` | Base64-encoded Apple Distribution `.p12` |
+| Secret | `APPSTORE_CERTIFICATES_PASSWORD` | Password for the `.p12` |
+
+The API key requires App Manager access. The provisioning profile must be named `AppStore net.steinbok.Jeffpardy`. The workflows use a `testflight` environment, where optional deployment protection rules can be configured. Approval rules apply to both manual and 60-day freshness releases.

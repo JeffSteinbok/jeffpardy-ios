@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import AudioToolbox
 
 struct PlayerView: View {
     @Binding var pendingGameCode: String?
@@ -14,7 +15,13 @@ struct PlayerView: View {
         NavigationStack {
             Group {
                 if viewModel.isJoined {
-                    buzzerView
+                    if viewModel.isGameOver {
+                        gameOverView
+                    } else if viewModel.finalPhase == .inactive {
+                        buzzerView
+                    } else {
+                        finalJeffpardyView
+                    }
                 } else {
                     joinView
                 }
@@ -64,7 +71,26 @@ struct PlayerView: View {
                         Button("Leave") {
                             Task {
                                 await viewModel.disconnect()
+                                hasSelectedGame = false
                             }
+                        }
+                    }
+                } else {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            if hasSelectedGame {
+                                Task {
+                                    await viewModel.disconnect()
+                                    hasSelectedGame = false
+                                }
+                            } else {
+                                onExit()
+                            }
+                        } label: {
+                            Label(
+                                hasSelectedGame ? "Game Code" : "Home",
+                                systemImage: "chevron.left"
+                            )
                         }
                     }
                 }
@@ -84,12 +110,19 @@ struct PlayerView: View {
             consumePendingGameCode()
         }
         .onChange(of: scenePhase) { _, newPhase in
-            guard newPhase == .active, viewModel.isJoined else {
+            guard newPhase == .active, !viewModel.gameCode.isEmpty else {
                 return
             }
             Task {
-                await viewModel.join()
+                await viewModel.resumeConnection()
             }
+        }
+        .onChange(of: viewModel.winnerFeedbackToken) {
+            guard viewModel.winnerFeedbackToken > 0 else {
+                return
+            }
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            AudioServicesPlaySystemSound(1025)
         }
     }
 
@@ -97,8 +130,8 @@ struct PlayerView: View {
         ScrollView {
             VStack(spacing: 28) {
                 JeffpardyLogo()
-                    .frame(maxWidth: 340)
-                    .padding(.top, 36)
+                    .frame(maxWidth: 300)
+                    .padding(.top, 16)
 
                 Text(hasSelectedGame ? "WHO'S PLAYING?" : "JOIN A GAME")
                     .font(.title.weight(.black))
@@ -117,7 +150,7 @@ struct PlayerView: View {
                             await viewModel.join()
                         }
                     } else {
-                        hasSelectedGame = true
+                        selectGame(viewModel.gameCode)
                     }
                 } label: {
                     if viewModel.connectionState == .connecting {
@@ -147,10 +180,8 @@ struct PlayerView: View {
     private var gameSelectionCard: some View {
         JeffpardyCard {
             VStack(spacing: 16) {
-                if !nearbyBrowser.games.isEmpty {
-                    nearbyGames
-                    labeledDivider("OR")
-                }
+                nearbyGames
+                labeledDivider("OR")
 
                 Button {
                     isShowingScanner = true
@@ -226,6 +257,21 @@ struct PlayerView: View {
                 .textInputAutocapitalization(.words)
                 .textFieldStyle(JeffpardyTextFieldStyle())
 
+                if !viewModel.sortedTeams.isEmpty {
+                    Menu {
+                        ForEach(viewModel.sortedTeams, id: \.name) { team in
+                            Button(team.name) {
+                                viewModel.team = team.name
+                            }
+                        }
+                    } label: {
+                        Label("Choose an existing team", systemImage: "chevron.down")
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(JeffpardyTheme.gold)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+
                 TextField(
                     "",
                     text: $viewModel.name,
@@ -277,6 +323,7 @@ struct PlayerView: View {
                             .tracking(0.8)
                     }
                     .padding(24)
+                    .foregroundStyle(.white)
                 }
             }
             .toolbar {
@@ -294,41 +341,53 @@ struct PlayerView: View {
 
     private var nearbyGames: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Nearby Games")
+            Text("JOIN A NEARBY GAME")
                 .font(.headline.weight(.black))
                 .tracking(0.8)
 
-            ForEach(nearbyBrowser.games) { game in
-                Button {
-                    selectGame(game.gameCode)
-                } label: {
-                    HStack {
-                        Image(systemName: "dot.radiowaves.left.and.right")
-                            .foregroundStyle(JeffpardyTheme.gold)
-
-                        VStack(alignment: .leading) {
-                            Text(game.hostName)
-                                .font(.headline)
-                            Text(game.gameCode)
-                                .font(.caption.monospaced())
-                        }
-
-                        Spacer()
-
-                        if viewModel.gameCode == game.gameCode {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(.green)
-                        }
-                    }
+            if nearbyBrowser.games.isEmpty {
+                Label("No nearby games found", systemImage: "dot.radiowaves.left.and.right")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.42))
                     .padding(12)
-                    .background(.black.opacity(0.25))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(.black.opacity(0.18))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(.white.opacity(0.15), lineWidth: 1)
+                    .accessibilityAddTraits(.isStaticText)
+            } else {
+                ForEach(nearbyBrowser.games) { game in
+                    Button {
+                        selectGame(game.gameCode)
+                    } label: {
+                        HStack {
+                            Image(systemName: "dot.radiowaves.left.and.right")
+                                .foregroundStyle(JeffpardyTheme.gold)
+
+                            VStack(alignment: .leading) {
+                                Text(game.hostName)
+                                    .font(.headline)
+                                Text(game.gameCode)
+                                    .font(.caption)
+                                    .tracking(1)
+                            }
+
+                            Spacer()
+
+                            if viewModel.gameCode == game.gameCode {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundStyle(.green)
+                            }
+                        }
+                        .padding(12)
+                        .background(.black.opacity(0.25))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(.white.opacity(0.15), lineWidth: 1)
+                        }
                     }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
         }
     }
@@ -375,9 +434,7 @@ struct PlayerView: View {
 
             if viewModel.sortedTeams.isEmpty {
                 Text(
-                    viewModel.connectionState == .connected
-                        ? "No players have joined yet."
-                        : "Loading players..."
+                    lobbyStatusMessage
                 )
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.6))
@@ -396,91 +453,142 @@ struct PlayerView: View {
         }
     }
 
+    private var lobbyStatusMessage: String {
+        switch viewModel.connectionState {
+        case .connected:
+            "No players have joined yet."
+        case .connecting, .reconnecting:
+            "Reconnecting to the game..."
+        case .disconnected:
+            "Disconnected. Return to the game-code screen or try again."
+        }
+    }
+
     private var buzzerView: some View {
-        ScrollView {
-            VStack(spacing: 22) {
-                JeffpardyLogo()
-                    .frame(maxWidth: 280)
-
-                JeffpardyCard {
-                    HStack {
-                        Label(viewModel.connectionState.label, systemImage: connectionIcon)
-                        Spacer()
-                        Text(viewModel.gameCode.uppercased())
-                            .font(.headline.monospaced())
+        GeometryReader { geometry in
+            if geometry.size.width > geometry.size.height {
+                VStack(spacing: 10) {
+                    buzzerHeader
+                    HStack(alignment: .top, spacing: 20) {
+                        buzzerControls
+                            .frame(maxWidth: .infinity)
+                        playerScoreboard
+                            .frame(maxWidth: .infinity)
                     }
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(.white.opacity(0.78))
                 }
-
-                Text("\(viewModel.name) • \(viewModel.team)")
-                    .font(.title2.weight(.black))
-                    .textCase(.uppercase)
-                    .tracking(1)
-                    .shadow(color: .black, radius: 2, x: 2, y: 2)
-
-                Button {
-                    buzz()
-                } label: {
-                    VStack(spacing: 8) {
-                        Text(viewModel.buzzerState.label)
-                            .font(.system(size: 42, weight: .black, design: .rounded))
-                            .minimumScaleFactor(0.5)
-
-                        if case let .winner(_, team, reactionTime) = viewModel.buzzerState {
-                            Text("\(team) • \(reactionTime) ms")
-                                .font(.headline)
-                        }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 10)
+            } else {
+                ScrollView {
+                    VStack(spacing: 14) {
+                        buzzerHeader
+                        buzzerControls
+                        playerScoreboard
                     }
-                    .foregroundStyle(.white)
-                    .frame(width: 250, height: 250)
-                    .background(
-                        RadialGradient(
-                            colors: [buzzerColor.opacity(0.95), buzzerColor.opacity(0.48)],
-                            center: .topLeading,
-                            startRadius: 10,
-                            endRadius: 250
-                        )
-                    )
-                    .clipShape(Circle())
-                    .overlay {
-                        Circle()
-                            .stroke(
-                                LinearGradient(
-                                    colors: [.white.opacity(0.9), JeffpardyTheme.gold.opacity(0.75)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 8
-                            )
-                    }
-                    .shadow(color: .black.opacity(0.55), radius: 14, y: 10)
-                    .shadow(color: buzzerColor.opacity(0.65), radius: 26)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Jeffpardy buzzer")
-                .accessibilityHint("Tap when the buzzer turns green")
-
-                Text(buzzerHelp)
-                    .font(.headline)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.white.opacity(0.8))
-                    .frame(minHeight: 44)
-
-                playerScoreboard
             }
-            .padding(24)
-            .padding(.bottom, 20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .jeffpardyBackground()
     }
 
+    private var buzzerHeader: some View {
+        HStack(spacing: 16) {
+            JeffpardyLogo()
+                .frame(maxWidth: 180)
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 3) {
+                Label(viewModel.connectionState.label, systemImage: connectionIcon)
+                    .foregroundStyle(
+                        viewModel.connectionState == .connected
+                            ? Color.green
+                            : Color.white.opacity(0.65)
+                    )
+                Text(viewModel.gameCode.uppercased())
+                    .font(.headline.weight(.black))
+                    .tracking(1.5)
+                    .foregroundStyle(JeffpardyTheme.gold)
+            }
+            .font(.caption.weight(.bold))
+        }
+    }
+
+    private var buzzerControls: some View {
+        VStack(spacing: 10) {
+            Text("\(viewModel.name) • \(viewModel.team)")
+                .font(.headline.weight(.black))
+                .textCase(.uppercase)
+                .tracking(0.8)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+
+            Button {
+                buzz()
+            } label: {
+                VStack(spacing: 6) {
+                    Text(viewModel.buzzerState.label)
+                        .font(.system(size: 38, weight: .black))
+                        .minimumScaleFactor(0.5)
+
+                    if case let .winner(_, team, reactionTime) = viewModel.buzzerState {
+                        Text("\(team) • \(reactionTime) ms")
+                            .font(.subheadline.weight(.bold))
+                    }
+                }
+                .foregroundStyle(.white)
+                .frame(width: 210, height: 210)
+                .background(
+                    RadialGradient(
+                        colors: [buzzerColor.opacity(0.95), buzzerColor.opacity(0.48)],
+                        center: .topLeading,
+                        startRadius: 10,
+                        endRadius: 210
+                    )
+                )
+                .clipShape(Circle())
+                .overlay {
+                    Circle()
+                        .stroke(
+                            LinearGradient(
+                                colors: [.white.opacity(0.9), JeffpardyTheme.gold.opacity(0.75)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 7
+                        )
+                }
+                .shadow(color: .black.opacity(0.55), radius: 12, y: 8)
+                .shadow(color: buzzerColor.opacity(0.55), radius: 20)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Jeffpardy buzzer")
+            .accessibilityHint("Tap when the buzzer turns green")
+
+            Text(buzzerHelp)
+                .font(.subheadline.weight(.semibold))
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.white.opacity(0.8))
+                .frame(minHeight: 36)
+
+            Picker("Handicap", selection: $viewModel.handicap) {
+                ForEach(Array(stride(from: 0, through: 300, by: 50)), id: \.self) { value in
+                    Text("\(value) ms").tag(value)
+                }
+            }
+            .pickerStyle(.menu)
+            .tint(JeffpardyTheme.gold)
+        }
+    }
+
     private var playerScoreboard: some View {
         JeffpardyCard {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 7) {
                 Text(viewModel.isGameOver ? "FINAL SCORES" : "SCORES")
-                    .font(.headline.weight(.black))
+                    .font(.subheadline.weight(.black))
                     .tracking(1)
 
                 if viewModel.sortedTeams.isEmpty {
@@ -491,15 +599,15 @@ struct PlayerView: View {
                         Array(viewModel.sortedTeams.enumerated()),
                         id: \.element.name
                     ) { index, team in
-                        HStack(spacing: 12) {
+                        HStack(spacing: 8) {
                             if viewModel.isGameOver && index == 0 {
                                 Image(systemName: "trophy.fill")
                                     .foregroundStyle(JeffpardyTheme.gold)
                             }
 
-                            VStack(alignment: .leading, spacing: 3) {
+                            VStack(alignment: .leading, spacing: 1) {
                                 Text(team.name)
-                                    .font(.headline.weight(.black))
+                                    .font(.subheadline.weight(.black))
                                 Text(team.players.map(\.name).joined(separator: ", "))
                                     .font(.caption)
                                     .foregroundStyle(.white.opacity(0.65))
@@ -508,7 +616,7 @@ struct PlayerView: View {
                             Spacer()
 
                             Text((viewModel.scores[team.name] ?? 0).formatted())
-                                .font(.title3.monospacedDigit().weight(.black))
+                                .font(.headline.monospacedDigit().weight(.black))
                                 .foregroundStyle(JeffpardyTheme.gold)
                         }
 
@@ -522,6 +630,114 @@ struct PlayerView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxWidth: 520)
+    }
+
+    private var finalJeffpardyView: some View {
+        ScrollView {
+            VStack(spacing: 14) {
+                buzzerHeader
+
+                Text("FINAL JEFFPARDY")
+                    .font(.title2.weight(.black))
+                    .tracking(1.5)
+
+                JeffpardyCard {
+                    VStack(spacing: 14) {
+                        Text("\(viewModel.name) • \(viewModel.team)")
+                            .font(.headline.weight(.black))
+
+                        if viewModel.finalWager == nil {
+                            Text("ENTER YOUR WAGER")
+                                .font(.headline.weight(.black))
+                            Text("You may wager from 0 to \(viewModel.finalMaxWager.formatted()).")
+                                .font(.subheadline)
+                                .foregroundStyle(.white.opacity(0.7))
+
+                            TextField(
+                                "",
+                                text: $viewModel.finalWagerText,
+                                prompt: Text("Wager").foregroundStyle(.white.opacity(0.55))
+                            )
+                            .keyboardType(.numberPad)
+                            .textFieldStyle(JeffpardyTextFieldStyle())
+
+                            Button("Submit Wager") {
+                                Task {
+                                    await viewModel.submitFinalWager()
+                                }
+                            }
+                            .buttonStyle(JeffpardyPrimaryButtonStyle())
+                        } else {
+                            Label(
+                                "Wager locked: \(viewModel.finalWager?.formatted() ?? "0")",
+                                systemImage: "lock.fill"
+                            )
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(JeffpardyTheme.gold)
+                        }
+
+                        Divider()
+                            .overlay(.white.opacity(0.15))
+
+                        if viewModel.finalPhase == .wager {
+                            Text("Waiting for the host to reveal the clue.")
+                                .foregroundStyle(.white.opacity(0.7))
+                        } else if viewModel.isFinalResponseSubmitted {
+                            Label("Response submitted", systemImage: "checkmark.circle.fill")
+                                .font(.headline.weight(.bold))
+                                .foregroundStyle(.green)
+                        } else if viewModel.finalPhase == .ended {
+                            Text("Response time has ended.")
+                                .font(.headline.weight(.bold))
+                        } else {
+                            Text("ENTER YOUR RESPONSE")
+                                .font(.headline.weight(.black))
+
+                            TextField(
+                                "",
+                                text: $viewModel.finalResponse,
+                                prompt: Text("What is...").foregroundStyle(.white.opacity(0.55))
+                            )
+                            .textInputAutocapitalization(.sentences)
+                            .textFieldStyle(JeffpardyTextFieldStyle())
+
+                            Button("Submit Response") {
+                                Task {
+                                    await viewModel.submitFinalResponse()
+                                }
+                            }
+                            .buttonStyle(JeffpardyPrimaryButtonStyle())
+                        }
+                    }
+                }
+                .frame(maxWidth: 520)
+
+                playerScoreboard
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .jeffpardyBackground()
+    }
+
+    private var gameOverView: some View {
+        VStack(spacing: 24) {
+            buzzerHeader
+
+            Spacer()
+
+            Text("FINAL SCORES")
+                .font(.title.weight(.black))
+                .tracking(1.5)
+
+            playerScoreboard
+
+            Spacer()
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .jeffpardyBackground()
     }
 
     private var buzzerColor: Color {

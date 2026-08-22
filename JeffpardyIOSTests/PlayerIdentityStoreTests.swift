@@ -34,4 +34,14 @@ final class PlayerIdentityStoreTests: XCTestCase {
             store.playerID(for: "XYZ789")
         )
     }
+
+    func testLastPlayerProfilePersistsAcrossStoreInstances() {
+        let store = PlayerIdentityStore(defaults: defaults)
+        store.savePlayer(name: "Jeff", team: "Champions")
+
+        let restoredStore = PlayerIdentityStore(defaults: defaults)
+
+        XCTAssertEqual(restoredStore.lastPlayerName, "Jeff")
+        XCTAssertEqual(restoredStore.lastTeamName, "Champions")
+    }
 }

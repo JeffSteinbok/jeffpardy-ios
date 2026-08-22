@@ -1,6 +1,11 @@
 import Foundation
 
 struct PlayerIdentityStore {
+    private enum Key {
+        static let playerName = "jeffpardy.lastPlayerName"
+        static let teamName = "jeffpardy.lastTeamName"
+    }
+
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
@@ -17,5 +22,17 @@ struct PlayerIdentityStore {
         defaults.set(playerID, forKey: key)
         return playerID
     }
-}
 
+    var lastPlayerName: String {
+        defaults.string(forKey: Key.playerName) ?? ""
+    }
+
+    var lastTeamName: String {
+        defaults.string(forKey: Key.teamName) ?? ""
+    }
+
+    func savePlayer(name: String, team: String) {
+        defaults.set(name, forKey: Key.playerName)
+        defaults.set(team, forKey: Key.teamName)
+    }
+}

@@ -13,15 +13,16 @@ struct AnimatedLaunchView: View {
                     .opacity(isContentVisible ? 1 : 0)
 
                 if isSplashVisible {
-                    VStack {
+                    VStack(spacing: 0) {
                         JeffpardyLogo()
-                            .frame(maxWidth: 340)
+                            .frame(maxWidth: 300)
+                            .padding(.top, 16)
                             .offset(
                                 y: isLogoRaised
-                                    ? -geometry.size.height * 0.31
-                                    : 0
+                                    ? 0
+                                    : (geometry.size.height - 180) / 2
                             )
-                            .opacity(isContentVisible ? 0 : 1)
+                        Spacer()
                     }
                     .padding(.horizontal, 28)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -58,11 +59,11 @@ struct AnimatedLaunchView: View {
             return
         }
 
-        withAnimation(.easeOut(duration: 0.24)) {
+        withAnimation(.easeOut(duration: 0.2)) {
             isContentVisible = true
         }
 
-        try? await Task.sleep(for: .milliseconds(300))
+        try? await Task.sleep(for: .milliseconds(200))
         guard !Task.isCancelled else {
             return
         }

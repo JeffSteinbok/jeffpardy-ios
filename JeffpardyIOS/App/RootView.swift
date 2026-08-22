@@ -30,6 +30,10 @@ struct RootView: View {
             }
         }
         .transition(.opacity)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            JeffpardyAttribution()
+        }
+        .environment(\.font, .system(.body, design: .default))
         .onOpenURL { url in
             guard let gameCode = AppConfiguration.gameCode(fromPlayerURL: url) else {
                 return
@@ -41,50 +45,41 @@ struct RootView: View {
     }
 
     private var roleChooser: some View {
-        VStack(spacing: 34) {
-            Spacer()
-
+        ZStack(alignment: .top) {
             JeffpardyLogo()
-                .frame(maxWidth: 360)
+                .frame(maxWidth: 300)
+                .padding(.top, 16)
 
-            VStack(spacing: 10) {
-                Text("WHAT WOULD YOU LIKE TO DO?")
-                    .font(.title2.weight(.black))
-                    .fontWidth(.condensed)
-                    .tracking(1.4)
-                    .multilineTextAlignment(.center)
-                    .shadow(color: .black, radius: 2, x: 2, y: 2)
-
+            VStack(spacing: 20) {
                 Text("Host a game on another screen, or join as a player.")
+                    .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.7))
                     .multilineTextAlignment(.center)
-            }
 
-            VStack(spacing: 16) {
-                Button {
-                    withAnimation(.easeOut(duration: 0.2)) {
-                        destination = .player
+                VStack(spacing: 16) {
+                    Button {
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            destination = .player
+                        }
+                    } label: {
+                        Label("Play a Game", systemImage: "hand.tap.fill")
+                            .frame(maxWidth: .infinity)
                     }
-                } label: {
-                    Label("Play a Game", systemImage: "hand.tap.fill")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(JeffpardyPrimaryButtonStyle())
+                    .buttonStyle(JeffpardyPrimaryButtonStyle())
 
-                Button {
-                    withAnimation(.easeOut(duration: 0.2)) {
-                        destination = .hostSetup
+                    Button {
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            destination = .hostSetup
+                        }
+                    } label: {
+                        Label("Host a Game", systemImage: "tv.fill")
+                            .frame(maxWidth: .infinity)
                     }
-                } label: {
-                    Label("Host a Game", systemImage: "tv.fill")
-                        .frame(maxWidth: .infinity)
+                    .buttonStyle(JeffpardyPrimaryButtonStyle())
                 }
-                .buttonStyle(JeffpardyPrimaryButtonStyle())
             }
             .frame(maxWidth: 440)
-
-            Spacer()
-            Spacer()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -94,19 +89,19 @@ struct RootView: View {
     private var hostSetup: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 28) {
+                VStack(spacing: 16) {
                     JeffpardyLogo()
-                        .frame(maxWidth: 340)
-                        .padding(.top, 36)
+                        .frame(maxWidth: 300)
+                        .padding(.top, 16)
 
                     Text("HOST A GAME")
-                        .font(.title.weight(.black))
+                        .font(.title2.weight(.black))
                         .fontWidth(.condensed)
                         .tracking(2)
                         .shadow(color: .black, radius: 2, x: 2, y: 2)
 
                     JeffpardyCard {
-                        VStack(alignment: .leading, spacing: 20) {
+                        VStack(alignment: .leading, spacing: 12) {
                             instruction(
                                 number: 1,
                                 title: "Start the game",
@@ -118,8 +113,10 @@ struct RootView: View {
                                     "Open jeffpardy.azurewebsites.net",
                                     systemImage: "safari"
                                 )
-                                .font(.headline.weight(.bold))
+                                .font(.subheadline.weight(.bold))
                                 .foregroundStyle(JeffpardyTheme.gold)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.75)
                             }
 
                             Divider()
@@ -136,7 +133,7 @@ struct RootView: View {
 
                             instruction(
                                 number: 3,
-                                title: "Use this as the display",
+                                title: "Use this as the Secondary Window",
                                 detail: "Rounds, clues, responses, and buzzer results will appear here automatically."
                             )
                         }
@@ -157,7 +154,7 @@ struct RootView: View {
                     .opacity(QRScannerView.isSupported ? 1 : 0.5)
                 }
                 .padding(.horizontal, 24)
-                .padding(.bottom, 48)
+                .padding(.bottom, 20)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .jeffpardyBackground()
@@ -191,10 +188,10 @@ struct RootView: View {
 
             VStack(alignment: .leading, spacing: 5) {
                 Text(title.uppercased())
-                    .font(.headline.weight(.black))
+                    .font(.subheadline.weight(.black))
                     .tracking(0.8)
                 Text(detail)
-                    .font(.subheadline)
+                    .font(.caption)
                     .foregroundStyle(.white.opacity(0.72))
             }
         }

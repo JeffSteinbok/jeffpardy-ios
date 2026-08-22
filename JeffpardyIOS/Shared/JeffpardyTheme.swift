@@ -127,3 +127,18 @@ struct JeffpardyTextFieldStyle: TextFieldStyle {
             }
     }
 }
+
+struct JeffpardyAttribution: View {
+    var body: some View {
+        Text(
+            "Jeffpardy was created to pass the time during COVID-19. The Jeopardy! game show and all elements thereof are the property of Jeopardy Productions, Inc. This app is not affiliated with, sponsored by, or operated by Jeopardy Productions, Inc."
+        )
+        .font(.system(size: 8))
+        .multilineTextAlignment(.center)
+        .foregroundStyle(.white.opacity(0.5))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity)
+        .accessibilityLabel("About Jeffpardy")
+    }
+}

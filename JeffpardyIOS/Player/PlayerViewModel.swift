@@ -12,6 +12,14 @@ final class PlayerViewModel: ObservableObject {
     @Published private(set) var teams: [String: Team] = [:]
     @Published private(set) var scores: [String: Int] = [:]
     @Published private(set) var isGameOver = false
+    @Published var handicap = 0
+    @Published private(set) var finalPhase = FinalJeffpardyPhase.inactive
+    @Published private(set) var finalMaxWager = 0
+    @Published var finalWagerText = ""
+    @Published private(set) var finalWager: Int?
+    @Published var finalResponse = ""
+    @Published private(set) var isFinalResponseSubmitted = false
+    @Published private(set) var winnerFeedbackToken = 0
     @Published var errorMessage: String?
 
     private let hubURL: URL
@@ -19,6 +27,7 @@ final class PlayerViewModel: ObservableObject {
     private var connection: HubConnection?
     private var buzzerActivatedAt: ContinuousClock.Instant?
     private var earlyBuzzUnlockTask: Task<Void, Never>?
+    private var finalClueShownAt: ContinuousClock.Instant?
 
     init(
         hubURL: URL = AppConfiguration.hubURL,
@@ -26,6 +35,8 @@ final class PlayerViewModel: ObservableObject {
     ) {
         self.hubURL = hubURL
         self.identityStore = identityStore
+        name = identityStore.lastPlayerName
+        team = identityStore.lastTeamName
     }
 
     var canJoin: Bool {
@@ -94,9 +105,45 @@ final class PlayerViewModel: ObservableObject {
             }
 
             try await registerPlayer(on: activeConnection)
+            identityStore.savePlayer(
+                name: name.trimmingCharacters(in: .whitespacesAndNewlines),
+                team: team.trimmingCharacters(in: .whitespacesAndNewlines)
+            )
             isJoined = true
         } catch {
             errorMessage = "Unable to join the game: \(error.localizedDescription)"
+        }
+    }
+
+    func resumeConnection() async {
+        guard !gameCode.isEmpty else {
+            return
+        }
+
+        let wasJoined = isJoined
+        if let connection {
+            await connection.stop()
+        }
+
+        connectionState = .reconnecting
+        errorMessage = nil
+        let newConnection = makeConnection()
+        connection = newConnection
+        await registerHandlers(on: newConnection)
+
+        do {
+            try await newConnection.start()
+            if wasJoined {
+                try await registerPlayer(on: newConnection)
+            } else {
+                try await registerPlayerLobby(on: newConnection)
+            }
+            connectionState = .connected
+        } catch {
+            connectionState = .disconnected
+            errorMessage = wasJoined
+                ? "Unable to reconnect to the game: \(error.localizedDescription)"
+                : "Unable to reconnect to the lobby: \(error.localizedDescription)"
         }
     }
 
@@ -120,7 +167,7 @@ final class PlayerViewModel: ObservableObject {
                 method: "buzzIn",
                 arguments: gameCode,
                 reactionTime,
-                0,
+                handicap,
                 identityStore.playerID(for: gameCode)
             )
         } catch {
@@ -143,6 +190,13 @@ final class PlayerViewModel: ObservableObject {
         teams = [:]
         scores = [:]
         isGameOver = false
+        finalPhase = .inactive
+        finalMaxWager = 0
+        finalWagerText = ""
+        finalWager = nil
+        finalResponse = ""
+        isFinalResponseSubmitted = false
+        finalClueShownAt = nil
     }
 
     private func registerHandlers(on connection: HubConnection) async {
@@ -150,18 +204,19 @@ final class PlayerViewModel: ObservableObject {
             await MainActor.run {
                 self?.teams = teams
             }
+        }
 
-            await connection.on("broadcastScores") { [weak self] (scores: [String: Int]) in
-                await MainActor.run {
-                    self?.scores = scores
-                }
+        await connection.on("broadcastScores") { [weak self] (scores: [String: Int]) in
+            await MainActor.run {
+                self?.scores = scores
             }
+        }
 
-            await connection.on("endGame") { [weak self] (scores: [String: Int]) in
-                await MainActor.run {
-                    self?.scores = scores
-                    self?.isGameOver = true
-                }
+        await connection.on("endGame") { [weak self] (scores: [String: Int]) in
+            await MainActor.run {
+                self?.scores = scores
+                self?.isGameOver = true
+                self?.finalPhase = .inactive
             }
         }
 
@@ -182,11 +237,56 @@ final class PlayerViewModel: ObservableObject {
         await connection.on("assignWinner") {
             [weak self] (player: Player, reactionTime: Int, _: [BuzzerAttempt]) in
             await MainActor.run {
-                self?.buzzerState = .winner(
+                guard let self else {
+                    return
+                }
+                self.buzzerState = .winner(
                     name: player.name,
                     team: player.team,
                     reactionTime: reactionTime
                 )
+                if player.name == self.name && player.team == self.team {
+                    self.winnerFeedbackToken += 1
+                }
+            }
+        }
+
+        await connection.on("startFinalJeffpardy") { [weak self] (scores: [String: Int]) in
+            await MainActor.run {
+                guard let self, !self.team.isEmpty else {
+                    return
+                }
+
+                let isNewFinal = self.finalPhase == .inactive
+                self.scores = scores
+                self.finalMaxWager = max(scores[self.team] ?? 0, 0)
+                self.finalPhase = .wager
+                if isNewFinal {
+                    self.finalWager = nil
+                    self.finalWagerText = self.finalMaxWager == 0 ? "0" : ""
+                    self.finalResponse = ""
+                    self.isFinalResponseSubmitted = false
+                    self.finalClueShownAt = nil
+                }
+
+                if self.finalMaxWager == 0 && self.finalWager == nil {
+                    Task {
+                        await self.submitFinalWager()
+                    }
+                }
+            }
+        }
+
+        await connection.on("showFinalJeffpardyClue") { [weak self] in
+            await MainActor.run {
+                self?.finalClueShownAt = .now
+                self?.finalPhase = .response
+            }
+        }
+
+        await connection.on("endFinalJeffpardy") { [weak self] in
+            await MainActor.run {
+                self?.finalPhase = .ended
             }
         }
 
@@ -225,6 +325,64 @@ final class PlayerViewModel: ObservableObject {
                     self?.errorMessage = "Connection closed: \(error.localizedDescription)"
                 }
             }
+        }
+    }
+
+    func submitFinalWager() async {
+        guard finalPhase == .wager, finalWager == nil else {
+            return
+        }
+        guard
+            let wager = Int(finalWagerText),
+            (0...finalMaxWager).contains(wager)
+        else {
+            errorMessage = "Enter a wager between 0 and \(finalMaxWager)."
+            return
+        }
+
+        do {
+            try await connection?.send(
+                method: "submitWager",
+                arguments: gameCode,
+                wager,
+                identityStore.playerID(for: gameCode)
+            )
+            finalWager = wager
+        } catch {
+            errorMessage = "The wager could not be submitted: \(error.localizedDescription)"
+        }
+    }
+
+    func submitFinalResponse() async {
+        guard finalPhase == .response, !isFinalResponseSubmitted else {
+            return
+        }
+        guard let finalClueShownAt else {
+            errorMessage = "Wait for the Final Jeffpardy clue before responding."
+            return
+        }
+
+        let trimmedResponse = finalResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedResponse.isEmpty else {
+            errorMessage = "Enter your Final Jeffpardy response."
+            return
+        }
+
+        let duration = finalClueShownAt.duration(to: .now)
+        let responseTime = max(0, Int(duration.components.seconds * 1_000)
+            + Int(duration.components.attoseconds / 1_000_000_000_000_000))
+
+        do {
+            try await connection?.send(
+                method: "submitAnswer",
+                arguments: gameCode,
+                trimmedResponse,
+                responseTime,
+                identityStore.playerID(for: gameCode)
+            )
+            isFinalResponseSubmitted = true
+        } catch {
+            errorMessage = "The response could not be submitted: \(error.localizedDescription)"
         }
     }
 
