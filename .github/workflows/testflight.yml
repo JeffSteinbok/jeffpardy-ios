@@ -60,7 +60,11 @@ jobs:
       - name: Set unique build number
         id: build
         run: |
-          build_number="$((1000 + GITHUB_RUN_NUMBER)).${GITHUB_RUN_ATTEMPT}"
+          # YYYYMMDD.HHmm. A run counter reads better, but only a runner knows
+          # its run number: one upload from a laptop would put the build number
+          # permanently out of the workflow's reach, since it must strictly
+          # increase and can never be lowered.
+          build_number="$(date -u +%Y%m%d.%H%M)"
           xcrun agvtool new-version -all "$build_number"
           echo "number=$build_number" >> "$GITHUB_OUTPUT"
 
