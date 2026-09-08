@@ -48,5 +48,12 @@ Configure these repository values under **Settings → Secrets and variables →
 | Secret | `APPSTORE_API_PRIVATE_KEY` | Full contents of the `.p8` API private key |
 | Secret | `APPSTORE_CERTIFICATES_FILE_BASE64` | Base64-encoded Apple Distribution `.p12` |
 | Secret | `APPSTORE_CERTIFICATES_PASSWORD` | Password for the `.p12` |
+| Variable | `APPSTORE_BETA_GROUPS` | Optional. Comma-separated external TestFlight group names |
+
+### Beta App Review
+
+`Publish TestFlight` uploads the build and stops there, which is all internal testers need. Tick **Also submit the build for TestFlight Beta App Review** when starting the run to additionally submit it — external testers need that approval, and only on the first build of a version. The step waits for the build to finish processing, fills in "What to Test" if the upload did not, submits it, and treats an already-submitted build as success. If `APPSTORE_BETA_GROUPS` names external groups, the build is handed to them as well, so approval releases it without another visit to App Store Connect.
+
+Submission fails unless **Beta App Review Information** (contact details, and a demo account if the app needs a login) is filled in once under the app's TestFlight tab. App Store release remains a separate manual submission.
 
 The API key requires App Manager access. The provisioning profile must be named `AppStore net.steinbok.Jeffpardy`. The workflows use a `testflight` environment, where optional deployment protection rules can be configured. Approval rules apply to both manual and 60-day freshness releases.

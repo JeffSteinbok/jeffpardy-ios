@@ -7,11 +7,20 @@ on:
         description: Optional TestFlight release notes
         required: false
         type: string
+      submit_for_beta_review:
+        description: Also submit the build for TestFlight Beta App Review
+        required: false
+        default: false
+        type: boolean
   workflow_call:
     inputs:
       release_notes:
         required: false
         type: string
+      submit_for_beta_review:
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -121,3 +130,249 @@ jobs:
           # so App Store Connect has the value at upload time and rejects a second
           # write with a 409 — which fails the run after a successful upload.
           wait-for-processing: "true"
+
+      # A pip install against the runner's Homebrew Python hits
+      # externally-managed-environment, so use a tool-cache Python instead.
+      - name: Set up Python for App Store Connect
+        if: ${{ inputs.submit_for_beta_review }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Submit for Beta App Review
+        if: ${{ inputs.submit_for_beta_review }}
+        env:
+          APPSTORE_APP_ID: ${{ vars.APPSTORE_APP_ID }}
+          APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
+          APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
+          APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+          BUILD_NUMBER: ${{ steps.build.outputs.number }}
+          RELEASE_NOTES: ${{ inputs.release_notes || format('Automated build {0}', steps.build.outputs.number) }}
+          BETA_GROUPS: ${{ vars.APPSTORE_BETA_GROUPS }}
+        run: |
+          python3 -m pip install --quiet pyjwt cryptography
+          python3 <<'PY'
+          import datetime
+          import json
+          import os
+          import time
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          import jwt
+
+          API = "https://api.appstoreconnect.apple.com"
+
+          required = [
+              "APPSTORE_APP_ID",
+              "APPSTORE_ISSUER_ID",
+              "APPSTORE_API_KEY_ID",
+              "APPSTORE_API_PRIVATE_KEY",
+              "BUILD_NUMBER",
+          ]
+          missing = [name for name in required if not os.environ.get(name)]
+          if missing:
+              raise SystemExit("Missing App Store Connect configuration: " + ", ".join(missing))
+
+          app_id = os.environ["APPSTORE_APP_ID"]
+          build_number = os.environ["BUILD_NUMBER"]
+          release_notes = os.environ.get("RELEASE_NOTES", "").strip()
+          group_names = [
+              name.strip()
+              for name in os.environ.get("BETA_GROUPS", "").split(",")
+              if name.strip()
+          ]
+
+
+          def token():
+              now = datetime.datetime.now(datetime.timezone.utc)
+              return jwt.encode(
+                  {
+                      "iss": os.environ["APPSTORE_ISSUER_ID"],
+                      "iat": now,
+                      "exp": now + datetime.timedelta(minutes=10),
+                      "aud": "appstoreconnect-v1",
+                  },
+                  os.environ["APPSTORE_API_PRIVATE_KEY"],
+                  algorithm="ES256",
+                  headers={"kid": os.environ["APPSTORE_API_KEY_ID"], "typ": "JWT"},
+              )
+
+
+          def call(method, path, payload=None):
+              request = urllib.request.Request(
+                  API + path,
+                  method=method,
+                  data=json.dumps(payload).encode() if payload is not None else None,
+                  headers={
+                      "Authorization": "Bearer " + token(),
+                      "Content-Type": "application/json",
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(request) as response:
+                      body = response.read()
+                      return response.status, (json.loads(body) if body else {})
+              except urllib.error.HTTPError as error:
+                  body = error.read().decode(errors="replace")
+                  try:
+                      return error.code, json.loads(body)
+                  except json.JSONDecodeError:
+                      return error.code, {"raw": body}
+
+
+          def detail(payload):
+              errors = payload.get("errors") or []
+              messages = [error.get("detail") or error.get("title") for error in errors]
+              return "; ".join(filter(None, messages)) or json.dumps(payload)[:400]
+
+
+          # The upload step waits for processing, but the build can still take a moment
+          # to become reviewable.
+          query = urllib.parse.urlencode(
+              {"filter[app]": app_id, "filter[version]": build_number, "limit": "1"}
+          )
+          deadline = time.time() + 900
+          build = None
+          while time.time() < deadline:
+              status, payload = call("GET", "/v1/builds?" + query)
+              if status != 200:
+                  raise SystemExit(f"Could not look up build {build_number}: {detail(payload)}")
+
+              found = (payload.get("data") or [None])[0]
+              if found is not None:
+                  state = found["attributes"].get("processingState")
+                  if state == "VALID":
+                      build = found
+                      break
+                  if state in {"INVALID", "FAILED"}:
+                      raise SystemExit(f"Build {build_number} finished processing as {state}.")
+                  print(f"Build {build_number} is {state}; waiting.")
+              else:
+                  print(f"Build {build_number} is not visible yet; waiting.")
+              time.sleep(30)
+
+          if build is None:
+              raise SystemExit(
+                  f"Build {build_number} did not become reviewable within 15 minutes."
+              )
+
+          build_id = build["id"]
+          print(f"Build {build_number} is ready ({build_id}).")
+
+          # Beta App Review rejects a build with no "What to Test" text. The upload step
+          # normally sets it; fill it in if that did not stick.
+          if release_notes:
+              status, payload = call("GET", f"/v1/builds/{build_id}/betaBuildLocalizations")
+              localizations = payload.get("data") or [] if status == 200 else []
+              english = next(
+                  (
+                      localization
+                      for localization in localizations
+                      if localization["attributes"].get("locale") == "en-US"
+                  ),
+                  None,
+              )
+
+              if english is None:
+                  status, payload = call(
+                      "POST",
+                      "/v1/betaBuildLocalizations",
+                      {
+                          "data": {
+                              "type": "betaBuildLocalizations",
+                              "attributes": {"locale": "en-US", "whatsNew": release_notes},
+                              "relationships": {
+                                  "build": {"data": {"type": "builds", "id": build_id}}
+                              },
+                          }
+                      },
+                  )
+                  if status not in {200, 201}:
+                      print(f"::warning::Could not set What to Test: {detail(payload)}")
+              elif not (english["attributes"].get("whatsNew") or "").strip():
+                  status, payload = call(
+                      "PATCH",
+                      f"/v1/betaBuildLocalizations/{english['id']}",
+                      {
+                          "data": {
+                              "type": "betaBuildLocalizations",
+                              "id": english["id"],
+                              "attributes": {"whatsNew": release_notes},
+                          }
+                      },
+                  )
+                  if status != 200:
+                      print(f"::warning::Could not set What to Test: {detail(payload)}")
+
+          query = urllib.parse.urlencode({"filter[build]": build_id})
+          status, payload = call("GET", "/v1/betaAppReviewSubmissions?" + query)
+          existing = (payload.get("data") or []) if status == 200 else []
+
+          if existing:
+              state = existing[0]["attributes"].get("betaReviewState")
+              print(f"Build {build_number} is already in Beta App Review ({state}).")
+          else:
+              status, payload = call(
+                  "POST",
+                  "/v1/betaAppReviewSubmissions",
+                  {
+                      "data": {
+                          "type": "betaAppReviewSubmissions",
+                          "relationships": {
+                              "build": {"data": {"type": "builds", "id": build_id}}
+                          },
+                      }
+                  },
+              )
+              if status in {200, 201}:
+                  print(f"Submitted build {build_number} for Beta App Review.")
+              elif status == 409:
+                  print(f"Build {build_number} was already submitted: {detail(payload)}")
+              else:
+                  raise SystemExit(
+                      f"Could not submit build {build_number} for Beta App Review: "
+                      f"{detail(payload)}"
+                  )
+
+          # Optional: hand the build to named external groups so approval releases it to
+          # them. Never fatal, since the review submission above is the point of the step.
+          if group_names:
+              status, payload = call("GET", f"/v1/apps/{app_id}/betaGroups?limit=200")
+              if status != 200:
+                  print(f"::warning::Could not list beta groups: {detail(payload)}")
+              else:
+                  groups = payload.get("data") or []
+                  matched = [
+                      group
+                      for group in groups
+                      if group["attributes"].get("name") in group_names
+                  ]
+                  unknown = set(group_names) - {
+                      group["attributes"].get("name") for group in matched
+                  }
+                  if unknown:
+                      print(f"::warning::No such beta group: {', '.join(sorted(unknown))}")
+
+                  if matched:
+                      status, payload = call(
+                          "POST",
+                          f"/v1/builds/{build_id}/relationships/betaGroups",
+                          {
+                              "data": [
+                                  {"type": "betaGroups", "id": group["id"]}
+                                  for group in matched
+                              ]
+                          },
+                      )
+                      names = ", ".join(
+                          group["attributes"]["name"] for group in matched
+                      )
+                      if status in {200, 201, 204}:
+                          print(f"Added build {build_number} to: {names}")
+                      else:
+                          print(
+                              f"::warning::Could not add build to {names}: {detail(payload)}"
+                          )
+          PY
