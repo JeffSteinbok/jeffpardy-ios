@@ -57,15 +57,17 @@ struct JeffpardyLogo: View {
 }
 
 struct JeffpardyCard<Content: View>: View {
+    let padding: CGFloat
     let content: Content
 
-    init(@ViewBuilder content: () -> Content) {
+    init(padding: CGFloat = 18, @ViewBuilder content: () -> Content) {
+        self.padding = padding
         self.content = content()
     }
 
     var body: some View {
         content
-            .padding(18)
+            .padding(padding)
             .background(
                 LinearGradient(
                     colors: [
@@ -140,5 +142,29 @@ struct JeffpardyAttribution: View {
         .padding(.vertical, 4)
         .frame(maxWidth: .infinity)
         .accessibilityLabel("About Jeffpardy")
+    }
+}
+
+/// Set by whichever screen is currently showing live gameplay. `RootView` reads it to drop
+/// the attribution footer, which belongs on the entry screens rather than under a clue.
+private struct GameInProgressKey: PreferenceKey {
+    static let defaultValue = false
+
+    static func reduce(value: inout Bool, nextValue: () -> Bool) {
+        value = value || nextValue()
+    }
+}
+
+extension View {
+    func gameInProgress(_ isInProgress: Bool) -> some View {
+        preference(key: GameInProgressKey.self, value: isInProgress)
+    }
+
+    func onGameInProgressChange(_ action: @escaping (Bool) -> Void) -> some View {
+        onPreferenceChange(GameInProgressKey.self) { isInProgress in
+            Task { @MainActor in
+                action(isInProgress)
+            }
+        }
     }
 }

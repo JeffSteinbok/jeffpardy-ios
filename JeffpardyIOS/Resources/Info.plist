@@ -23,7 +23,11 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>JEFFPARDY_BASE_URL</key>
-	<string>https://jeffpardy.azurewebsites.net</string>
+	<string>https://jeffpardy.net</string>
+	<key>JEFFPARDY_LEGACY_HOSTS</key>
+	<array>
+		<string>jeffpardy.azurewebsites.net</string>
+	</array>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Jeffpardy uses Bluetooth to discover games hosted nearby.</string>
 	<key>NSBonjourServices</key>

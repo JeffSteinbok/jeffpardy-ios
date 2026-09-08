@@ -10,6 +10,7 @@ struct RootView: View {
 
     @State private var destination = AppDestination.chooser
     @State private var pendingGameCode: String?
+    @State private var isGameInProgress = false
 
     var body: some View {
         Group {
@@ -30,8 +31,11 @@ struct RootView: View {
             }
         }
         .transition(.opacity)
+        .onGameInProgressChange { isGameInProgress = $0 }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            JeffpardyAttribution()
+            if !isGameInProgress {
+                JeffpardyAttribution()
+            }
         }
         .environment(\.font, .system(.body, design: .default))
         .onOpenURL { url in
@@ -110,7 +114,7 @@ struct RootView: View {
 
                             Link(destination: AppConfiguration.baseURL) {
                                 Label(
-                                    "Open jeffpardy.azurewebsites.net",
+                                    "Open \(AppConfiguration.baseURL.host ?? "Jeffpardy")",
                                     systemImage: "safari"
                                 )
                                 .font(.subheadline.weight(.bold))

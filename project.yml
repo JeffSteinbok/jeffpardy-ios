@@ -56,11 +56,14 @@ targets:
         NSBonjourServices:
           - _jeffpardy._tcp
         ITSAppUsesNonExemptEncryption: false
-        JEFFPARDY_BASE_URL: https://jeffpardy.azurewebsites.net
+        JEFFPARDY_BASE_URL: https://jeffpardy.net
+        JEFFPARDY_LEGACY_HOSTS:
+          - jeffpardy.azurewebsites.net
     entitlements:
       path: JeffpardyIOS/Resources/JeffpardyIOS.entitlements
       properties:
         com.apple.developer.associated-domains:
+          - applinks:jeffpardy.net
           - applinks:jeffpardy.azurewebsites.net
   JeffpardyIOSTests:
     type: bundle.unit-test
@@ -72,6 +75,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: net.steinbok.JeffpardyTests
+        GENERATE_INFOPLIST_FILE: YES
 schemes:
   JeffpardyIOS:
     build:
