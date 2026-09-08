@@ -24,7 +24,7 @@ Select a development team in the Jeffpardy target before running on a physical d
 
 ## Server configuration
 
-The default server is `https://jeffpardy.azurewebsites.net`. To use a local or alternate server, change `JEFFPARDY_BASE_URL` in `project.yml`, then regenerate the Xcode project.
+The default server is `https://jeffpardy.net`. Links on the retired `jeffpardy.azurewebsites.net` domain still open the app; that list lives in `JEFFPARDY_LEGACY_HOSTS`. To use a local or alternate server, change `JEFFPARDY_BASE_URL` in `project.yml`, then regenerate the Xcode project.
 
 Local HTTP development also requires an App Transport Security exception. Prefer a trusted HTTPS development endpoint instead of adding a broad exception.
 

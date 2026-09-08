@@ -10,11 +10,20 @@ final class AppConfigurationTests: XCTestCase {
 
         XCTAssertEqual(
             url?.absoluteString,
-            "https://jeffpardy.azurewebsites.net/HostSecondary#ABC123DEF456"
+            "https://jeffpardy.net/HostSecondary#ABC123DEF456"
         )
     }
 
     func testGameCodeFromPlayerURL_ReturnsUppercaseCode() {
+        let url = URL(string: "https://jeffpardy.net/player#abc123")!
+
+        XCTAssertEqual(
+            AppConfiguration.gameCode(fromPlayerURL: url),
+            "ABC123"
+        )
+    }
+
+    func testGameCodeFromPlayerURL_AcceptsLegacyHost() {
         let url = URL(string: "https://jeffpardy.azurewebsites.net/player#abc123")!
 
         XCTAssertEqual(
@@ -25,7 +34,7 @@ final class AppConfigurationTests: XCTestCase {
 
     func testGameCodeFromPlayerURL_RejectsHostSecondaryURL() {
         let url = URL(
-            string: "https://jeffpardy.azurewebsites.net/hostSecondary#ABC123DEF456"
+            string: "https://jeffpardy.net/hostSecondary#ABC123DEF456"
         )!
 
         XCTAssertNil(AppConfiguration.gameCode(fromPlayerURL: url))
@@ -40,12 +49,26 @@ final class AppConfigurationTests: XCTestCase {
     func testPlayerURL_CreatesShareableUppercaseLink() {
         XCTAssertEqual(
             AppConfiguration.playerURL(gameCode: "abc123")?.absoluteString,
-            "https://jeffpardy.azurewebsites.net/player#ABC123"
+            "https://jeffpardy.net/player#ABC123"
         )
     }
 
     func testPlayerURL_RejectsInvalidCode() {
         XCTAssertNil(AppConfiguration.playerURL(gameCode: "ABC"))
         XCTAssertNil(AppConfiguration.playerURL(gameCode: "ABC!23"))
+    }
+
+    func testRecognizedHosts_IncludeCurrentAndLegacyDomains() {
+        XCTAssertEqual(
+            AppConfiguration.recognizedHosts,
+            ["jeffpardy.net", "jeffpardy.azurewebsites.net"]
+        )
+    }
+
+    func testIsRecognizedHost_IsCaseInsensitiveAndRejectsOthers() {
+        XCTAssertTrue(AppConfiguration.isRecognizedHost("JeffPardy.NET"))
+        XCTAssertTrue(AppConfiguration.isRecognizedHost("JEFFPARDY.AZUREWEBSITES.NET"))
+        XCTAssertFalse(AppConfiguration.isRecognizedHost("example.com"))
+        XCTAssertFalse(AppConfiguration.isRecognizedHost(nil))
     }
 }

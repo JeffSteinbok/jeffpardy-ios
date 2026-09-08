@@ -4,6 +4,7 @@
 <dict>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
+		<string>applinks:jeffpardy.net</string>
 		<string>applinks:jeffpardy.azurewebsites.net</string>
 	</array>
 </dict>

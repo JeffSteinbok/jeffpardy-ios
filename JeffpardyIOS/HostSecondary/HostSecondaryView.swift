@@ -8,6 +8,8 @@ struct HostSecondaryView: View {
     @StateObject private var nearbyAdvertiser = NearbyGameAdvertiser()
     @StateObject private var viewModel = HostSecondaryViewModel()
 
+    private static let buzzerResultsHeight: CGFloat = 86
+
     var body: some View {
         NavigationStack {
             Group {
@@ -17,6 +19,8 @@ struct HostSecondaryView: View {
                     nativeDisplay
                 }
             }
+            .keepScreenAwake(!gameCode.isEmpty)
+            .gameInProgress(!gameCode.isEmpty)
             .navigationTitle("")
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
@@ -155,13 +159,20 @@ struct HostSecondaryView: View {
 
             displayContent
 
-            if !viewModel.topBuzzers.isEmpty {
+            if isShowingClue {
                 buzzerResults
             }
         }
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .jeffpardyBackground()
+    }
+
+    private var isShowingClue: Bool {
+        if case .clue = viewModel.displayState {
+            return true
+        }
+        return false
     }
 
     @ViewBuilder
@@ -186,62 +197,55 @@ struct HostSecondaryView: View {
 
         case let .round(round):
             ScrollView {
-                VStack(spacing: 14) {
-                    Text("\(round.name.uppercased()) ROUND")
-                        .font(.system(size: 28, weight: .black))
-                        .fontWidth(.condensed)
-                        .tracking(1.4)
-                        .shadow(color: .black, radius: 2, x: 2, y: 2)
-
-                    LazyVGrid(
-                        columns: [GridItem(.adaptive(minimum: 180), spacing: 10)],
-                        spacing: 10
-                    ) {
-                        ForEach(round.categories, id: \.title) { category in
-                            JeffpardyCard {
-                                VStack(spacing: 4) {
-                                    Text(category.title.uppercased())
-                                        .font(.headline.weight(.black))
-                                        .multilineTextAlignment(.center)
-                                    if let airDate = category.formattedAirDate {
-                                        Text(airDate)
-                                            .font(.caption.weight(.semibold))
-                                            .foregroundStyle(JeffpardyTheme.gold)
-                                    }
-                                    if let comment = category.comment, !comment.isEmpty {
-                                        Text(comment)
-                                            .font(.caption)
-                                            .foregroundStyle(.white.opacity(0.65))
-                                            .multilineTextAlignment(.center)
-                                    }
-                                }
-                                .frame(maxWidth: .infinity, minHeight: 54)
-                            }
-                        }
-                    }
-                }
+                HostRoundGrid(round: round)
+                    .padding(.vertical, 2)
             }
+            .scrollBounceBehavior(.basedOnSize)
 
         case let .clue(clue):
-            VStack(spacing: 20) {
-                Spacer()
-                Text(htmlToPlainText(clue.clue))
-                    .font(.system(size: 38, weight: .bold))
-                    .multilineTextAlignment(.center)
-                    .minimumScaleFactor(0.55)
-                    .frame(maxWidth: 900)
+            VStack(spacing: 16) {
+                ScrollView {
+                    Text(htmlToPlainText(clue.clue))
+                        .font(.system(size: 34, weight: .bold))
+                        .multilineTextAlignment(.center)
+                        .minimumScaleFactor(0.5)
+                        .frame(maxWidth: 900)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                }
+                .scrollBounceBehavior(.basedOnSize)
 
-                Divider()
-                    .overlay(JeffpardyTheme.gold.opacity(0.5))
-
-                Text(htmlToPlainText(clue.question))
-                    .font(.system(size: 28, weight: .semibold))
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(JeffpardyTheme.gold)
-                    .minimumScaleFactor(0.6)
-                    .frame(maxWidth: 900)
-                Spacer()
+                answerPanel(for: clue)
             }
+        }
+    }
+
+    /// The answer sits in its own panel below the clue, sized to its own content so a long
+    /// clue scrolls instead of pushing it off-screen. The host needs it the moment the clue
+    /// goes up, not once a buzz resolves.
+    @ViewBuilder
+    private func answerPanel(for clue: HostClue) -> some View {
+        let answer = htmlToPlainText(clue.question)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if !answer.isEmpty {
+            JeffpardyCard {
+                VStack(spacing: 6) {
+                    Text("ANSWER")
+                        .font(.caption.weight(.black))
+                        .tracking(1.4)
+                        .foregroundStyle(.white.opacity(0.6))
+
+                    Text(answer)
+                        .font(.system(size: 30, weight: .heavy))
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(JeffpardyTheme.gold)
+                        .minimumScaleFactor(0.5)
+                        .frame(maxWidth: 900)
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -272,36 +276,51 @@ struct HostSecondaryView: View {
         }
     }
 
+    /// Always occupies the same height, empty or not, so the clue above it does not jump
+    /// when the first buzz lands.
     private var buzzerResults: some View {
         HStack(spacing: 12) {
-            ForEach(Array(viewModel.topBuzzers.enumerated()), id: \.offset) {
-                index,
-                attempt in
-                VStack(spacing: 4) {
-                    Text(index == 0 ? "WINNER" : "#\(index + 1)")
-                        .font(.caption.weight(.black))
-                        .foregroundStyle(JeffpardyTheme.gold)
-                    Text(attempt.player.name)
-                        .font(.headline.weight(.black))
-                    Text("\(attempt.player.team) • \(attempt.time) ms")
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.7))
-                }
-                .padding(12)
-                .frame(maxWidth: .infinity)
-                .background(.black.opacity(index == 0 ? 0.45 : 0.25))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(
-                            index == 0
-                                ? JeffpardyTheme.gold
-                                : Color.white.opacity(0.15),
-                            lineWidth: index == 0 ? 2 : 1
-                        )
+            if viewModel.topBuzzers.isEmpty {
+                Text("WAITING FOR BUZZ-INS")
+                    .font(.caption.weight(.black))
+                    .tracking(1)
+                    .foregroundStyle(.white.opacity(0.3))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ForEach(Array(viewModel.topBuzzers.enumerated()), id: \.offset) {
+                    index,
+                    attempt in
+                    VStack(spacing: 4) {
+                        Text(index == 0 ? "WINNER" : "#\(index + 1)")
+                            .font(.caption.weight(.black))
+                            .foregroundStyle(JeffpardyTheme.gold)
+                        Text(attempt.player.name)
+                            .font(.headline.weight(.black))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                        Text("\(attempt.player.team) • \(attempt.time) ms")
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.7))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                    }
+                    .padding(12)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(.black.opacity(index == 0 ? 0.45 : 0.25))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(
+                                index == 0
+                                    ? JeffpardyTheme.gold
+                                    : Color.white.opacity(0.15),
+                                lineWidth: index == 0 ? 2 : 1
+                            )
+                    }
                 }
             }
         }
+        .frame(height: Self.buzzerResultsHeight)
     }
 
     private var connectionIcon: String {
@@ -319,7 +338,7 @@ struct HostSecondaryView: View {
         guard
             let url = URL(string: payload),
             ["http", "https"].contains(url.scheme?.lowercased() ?? ""),
-            url.host?.caseInsensitiveCompare(AppConfiguration.baseURL.host ?? "") == .orderedSame,
+            AppConfiguration.isRecognizedHost(url.host),
             url.path.lowercased() == "/hostsecondary",
             let fragment = url.fragment,
             fragment.count == 12,

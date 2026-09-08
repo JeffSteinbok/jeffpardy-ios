@@ -72,9 +72,20 @@ final class HostSecondaryViewModel: ObservableObject {
             }
         }
 
+        // The new clue is the only thing that clears the previous buzz-in times: the host
+        // reads them while judging, long after the server has reset the buzzer.
         await connection.on("showClue") { [weak self] (clue: HostClue) in
             await MainActor.run {
                 self?.displayState = .clue(clue)
+                self?.topBuzzers = []
+            }
+        }
+
+        // Re-arming the buzzer starts a new race, so the winner on screen is stale the
+        // moment the host activates it again. `resetBuzzer` deliberately does not clear:
+        // the host is still judging the buzz that just resolved.
+        await connection.on("activateBuzzer") { [weak self] in
+            await MainActor.run {
                 self?.topBuzzers = []
             }
         }
@@ -83,12 +94,6 @@ final class HostSecondaryViewModel: ObservableObject {
             [weak self] (_: Player, _: Int, topBuzzers: [BuzzerAttempt]) in
             await MainActor.run {
                 self?.topBuzzers = topBuzzers
-            }
-        }
-
-        await connection.on("resetBuzzer") { [weak self] in
-            await MainActor.run {
-                self?.topBuzzers = []
             }
         }
 

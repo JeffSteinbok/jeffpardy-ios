@@ -96,6 +96,8 @@ struct PlayerView: View {
                 }
             }
         }
+        .keepScreenAwake(viewModel.isJoined && !viewModel.isGameOver)
+        .gameInProgress(viewModel.isJoined)
         .onAppear {
             nearbyBrowser.start()
             consumePendingGameCode()
